@@ -5,7 +5,7 @@ import useTour from 'tours/useTour'
 import { POST_EDITOR_TOUR_ID, postEditorTourSteps } from 'tours/postEditorTour'
 import { debounce, get, isEqual, isEmpty, uniqBy, uniqueId } from 'lodash/fp'
 import { TriangleAlert, X } from 'lucide-react'
-import { DateTimeHelpers } from '@hylo/shared'
+import { DateTimeHelpers, proposalOptionsEqual } from '@hylo/shared'
 import { getLocaleFromLocalStorage } from 'util/locale'
 import React, { useCallback, useMemo, useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
@@ -1264,7 +1264,7 @@ function PostEditorInner ({
     if (!isValid || loading || postPending) return
 
     const _save = announcementSelected ? toggleAnnouncementModal : save
-    if (currentPost.type === 'proposal' && isEditing) {
+    if (currentPost.type === 'proposal' && isEditing && !proposalOptionsEqual(currentPost.proposalOptions, initialPost.proposalOptions)) {
       if (window.confirm(t('Changing proposal options will reset the votes. Are you sure you want to continue?'))) {
         _save()
       }
@@ -1663,7 +1663,7 @@ function PostEditorInner ({
               <Icon name='Plus' className='text-foreground' />
               <span className='rounded-md'>{t('Add an option to vote on...')}</span>
             </div>
-            {isEditing && currentPost && !isEqual(currentPost.proposalOptions, initialPost.proposalOptions) && (
+            {isEditing && currentPost && !proposalOptionsEqual(currentPost.proposalOptions, initialPost.proposalOptions) && (
               <div className='text-accent text-xs flex items-center gap-2'>
                 <TriangleAlert className='h-5 w-5' />
                 <span>{t('When options are changed, existing votes will be discarded')}</span>

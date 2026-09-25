@@ -1,4 +1,10 @@
-# Hylo - Claude Code Project Guide
+# Hylo Community Fork — Project Guide
+
+## Fork boundaries
+
+- Work in `AlexDorsten/hylo`; upstream is a reference, not a publishing target.
+- Public code, issues, PRs, fixtures and screenshots must contain only generic deployment examples and synthetic data. Keep operator infrastructure, domains, accounts, credentials and unrelated services out of this repository.
+- For every community feature, assess where optional AI assistance could help and record the result in `docs/community/ai-assistance.md`. Describe the task, permitted input, human review and failure cases. An opportunity assessment does not authorize adding an AI provider or transmitting community data.
 
 ## Project Structure
 
@@ -8,6 +14,20 @@ Monorepo with Yarn workspaces:
 - `apps/backend` — Node.js API server (port 3001)
 - `apps/desktop` — Electron desktop app
 - `packages/` — Shared packages (`shared`, `graphql`, `hooks`, `contexts`, `presenters`, `navigation`, `urql`)
+
+## Agent skills
+
+### Issue tracker
+
+Use GitHub Issues in `AlexDorsten/hylo`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Reuse the existing `agent-ready` and `wontfix` labels; other triage roles have no configured label yet. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Community domain context lives in `docs/community/`; accepted architecture is recorded in `docs/adr/`. No root context map exists yet. See `docs/agents/domain.md`.
 
 ## Common Commands
 
@@ -95,6 +115,8 @@ cd apps/web && yarn build
 - Include a test plan describing what was verified
 
 Attach only relevant, sanitized evidence to the fork PR. Do not reuse an upstream release or publish operator infrastructure details in screenshots or logs.
+
+**Screenshots:** Use isolated synthetic fixtures, inspect images for private data, and store review evidence under `docs/community/review/`. Link to the fork's committed images in the PR.
 
 ## Autonomous Agent Workflow
 

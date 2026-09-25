@@ -9,6 +9,7 @@ export * from './constants'
 export * from './OfferingHelpers'
 export * from './viewHelpers'
 export * from './LocaleHelpers'
+export * from './ProposalHelpers'
 
 export {
   TextHelpers,

@@ -54,6 +54,7 @@ export const sendDigests = async () => {
         {
           comments: q => {
             q.where('created_at', '>', lastDigestAt)
+            q.where('active', true)
             q.orderBy('created_at', 'asc')
           }
         },
@@ -68,7 +69,7 @@ export const sendDigests = async () => {
 
     const numSends = await Promise.all(posts.map(async post => {
       const { comments } = post.relations
-      if (comments.length === 0) return []
+      if (comments.length === 0) return 0
 
       const followers = await post.followers().fetch()
 
@@ -169,6 +170,7 @@ async function sendDigestForUser ({ post, comments, user }) {
       ctcn: routeGroup?.get('name')
     }).toString()
 
+    if (!await Post.isVisibleToUser(post.id, user.id)) return
     return Email.sendCommentDigest({
       email: user.get('email'),
       locale,

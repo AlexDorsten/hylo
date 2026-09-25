@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql'
 import { isEmpty, merge, trim } from 'lodash'
 import { includes } from 'lodash/fp'
+import { canModerateDiscussion } from '../../../lib/discussionAccess'
 
 import underlyingDeleteComment from '../../models/comment/deleteComment'
 import underlyingCreateComment, { pushMessageUpdatedToSockets } from '../../models/comment/createComment'
@@ -8,6 +9,14 @@ import underlyingUpdateComment from '../../models/comment/updateComment'
 import { deleteDraftForContext } from './draft'
 
 export async function canDeleteComment (userId, comment) {
+  if (!comment) return false
+  const post = comment.get('post_id') && await Post.find(comment.get('post_id'))
+  if (comment.get('post_id') && !post) return false
+  if (post && post.get('type') === Post.Type.DISCUSSION) {
+    if (!await Post.isVisibleToUser(post.id, userId)) return false
+    if (String(comment.get('user_id')) === String(userId)) return true
+    return canModerateDiscussion(userId, post.id)
+  }
   if (comment.get('user_id') === userId) return true
 
   const commentWithGroups = await comment.load('post.groups')
@@ -21,6 +30,10 @@ export async function canDeleteComment (userId, comment) {
 }
 
 export async function canUpdateComment (userId, comment) {
+  const post = comment && await Post.find(comment.get('post_id'))
+  if (!post || (post.get('type') === Post.Type.DISCUSSION && !await Post.isVisibleToUser(post.id, userId))) {
+    throw new GraphQLError("You don't have permission to edit this comment")
+  }
   if (comment.get('user_id') === userId) {
     return true
   } else {
@@ -120,6 +133,10 @@ export async function validateCommentCreateData (userId, data) {
   const isVisible = await Post.isVisibleToUser(data.postId, userId)
 
   if (isVisible) {
+    if (data.parentCommentId) {
+      const parentComment = await Comment.where({ id: data.parentCommentId, post_id: data.postId, active: true }).fetch()
+      if (!parentComment) throw new GraphQLError('parent comment not found')
+    }
     if (!data.imageUrl && !trim(data.text) && isEmpty(data.attachments)) {
       throw new GraphQLError("Can't create a blank comment")
     }

@@ -29,6 +29,7 @@ const preloadNotification = (activity, medium) =>
     .save()
     .then(a => new Notification({
       activity_id: a.id,
+      user_id: a.get('reader_id'),
       medium
     }).save())
     .then(n => n.load(relations))
@@ -41,7 +42,7 @@ describe('Notification', function () {
       .then(u => { actor = u })
       .then(() => factories.post({ name: 'My Post', user_id: actor.id, description: 'The body of the post' }).save())
       .then(p => { post = p })
-      .then(() => new Comment({ text: 'hi', user_id: actor.id, post_id: post.id }).save())
+      .then(() => factories.comment({ text: 'hi', user_id: actor.id, post_id: post.id }).save())
       .then(c => { comment = c })
       .then(() => factories.group({ name: 'My Group', slug: 'my-group' }).save())
       .then(c => { group = c })

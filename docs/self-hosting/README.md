@@ -225,6 +225,10 @@ timezone configuration, failure reporting, overlap prevention and monitoring.
 
 ## Updates and recovery
 
+For the integrated discussion release, follow the
+[discussion rollout gate](../community/review/discussion-rollout.md), including
+the migration/restore rehearsal and coordinated replacement of every publisher.
+
 Stop API, worker, web and the external scheduler before a coordinated update.
 Record the current source/image digests and retain a recoverable database, media,
 queue and secret set. A database-only export is useful, but is not a complete

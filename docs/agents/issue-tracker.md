@@ -18,3 +18,7 @@ check dependencies before starting it. Use `Related to #N` for partial work and
 All published material must remain generic. Keep operator-specific hosts,
 credentials, account names, inventories of other services and private deployment
 configuration outside this repository, issues, PRs, logs and screenshots.
+
+Read an issue before changing its status. Use `--body-file` for multiline public text.
+Assess optional AI assistance for community features in their issue and
+`docs/community/ai-assistance.md`.

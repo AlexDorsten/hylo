@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql'
 
 export async function savePost (userId, postId) {
   const post = await Post.find(postId)
-  if (!post) throw new GraphQLError('Post not found')
+  if (!post || (post.get('type') === Post.Type.DISCUSSION && !await Post.isVisibleToUser(postId, userId))) throw new GraphQLError('Post not found')
 
   const postUser = await PostUser.find(postId, userId)
 
@@ -28,7 +28,7 @@ export async function savePost (userId, postId) {
 
 export async function unsavePost (userId, postId) {
   const post = await Post.find(postId)
-  if (!post) throw new GraphQLError('Post not found')
+  if (!post || (post.get('type') === Post.Type.DISCUSSION && !await Post.isVisibleToUser(postId, userId))) throw new GraphQLError('Post not found')
 
   const postUser = await PostUser.find(postId, userId)
 
@@ -40,4 +40,3 @@ export async function unsavePost (userId, postId) {
 
   return Post.find(postId)
 }
-

@@ -21,6 +21,7 @@ import {
 } from 'components/PostCard'
 import { chatUrlForActivityPost } from 'components/PostCard/ChatActivityCard'
 import ScrollListener from 'components/ScrollListener'
+import DiscussionOverview from 'components/DiscussionOverview/DiscussionOverview'
 import Comments from './Comments'
 import SocketSubscriber from 'components/SocketSubscriber'
 import Button from 'components/ui/button'
@@ -659,6 +660,7 @@ const PostDetail = forwardRef(function PostDetail (props, forwardedRef) {
               {...post}
             />
           )}
+          {post.type === 'discussion' && currentUser && !flagObscured && <DiscussionOverview key={postId} postId={postId} />}
           {isProject && currentUser && (
             <div className='flex flex-col gap-2 p-2 sm:p-4'>
               <div className={classes.joinProjectButtonContainer}>
