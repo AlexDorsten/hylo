@@ -153,6 +153,9 @@ jobs:
       - name: Check proposal vote persistence against PostgreSQL
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_hylo_proposals
+          # Sails also loads the built-in OIDC provider during model tests.
+          PROTOCOL: http
+          DOMAIN: localhost:3000
         run: |
           createdb --maintenance-db=postgresql://postgres:postgres@localhost:5432/postgres test_hylo_proposals
           yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js --timeout 10000
