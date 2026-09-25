@@ -96,6 +96,10 @@ export function handlePage (req, res) {
 }
 
 export const handleStaticPages = server => {
+  // Let the local SPA handle these routes on independent deployments.
+  // DISABLE_PROXY retains its existing maintenance/503 behavior.
+  if (process.env.HYLO_MARKETING_PROXY === 'false') return
+
   staticPages.forEach(page => {
     if (page === '') page = '/'
     server.get(page, handlePage)
