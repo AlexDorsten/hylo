@@ -37,9 +37,14 @@ function buildAllowedOriginsSet () {
 
 const graphqlCorsAllowedOriginsSet = buildAllowedOriginsSet()
 
+/** Shared list for HTTP CORS and production Socket.IO origin validation. */
+function hyloCorsAllowedOrigins () {
+  return [...buildAllowedOriginsSet()]
+}
+
 /** Comma-separated allowOrigins for sails.config.security.cors (same list as GraphQL). */
 function hyloCorsAllowOriginsCommaSeparated () {
-  return [...buildAllowedOriginsSet()].join(',')
+  return hyloCorsAllowedOrigins().join(',')
 }
 
 /**
@@ -55,5 +60,6 @@ function graphqlCorsOrigin (origin, callback) {
 module.exports = {
   HYLO_TRUSTED_BROWSER_ORIGINS,
   graphqlCorsOrigin,
+  hyloCorsAllowedOrigins,
   hyloCorsAllowOriginsCommaSeparated
 }

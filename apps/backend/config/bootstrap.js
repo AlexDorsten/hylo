@@ -13,6 +13,8 @@ import util from 'util'
 import models from '../api/models'
 import queryMonitor from '../lib/util/queryMonitor'
 import { red } from 'chalk'
+const { configuration: emailConfiguration } = require('../lib/email/delivery.cjs')
+const { paymentsEnabled } = require('../lib/payments.cjs')
 require('dotenv').config()
 
 // very handy, these
@@ -21,6 +23,8 @@ global.Promise = require('bluebird')
 global._ = require('lodash') // override Sails' old version of lodash
 
 module.exports.bootstrap = function (done) {
+  paymentsEnabled()
+  emailConfiguration()
   models.init()
 
   if (process.env.DEBUG_MEMORY) {

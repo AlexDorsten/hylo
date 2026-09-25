@@ -20,9 +20,6 @@ const jobDefinitions = {
   classMethod: function (job) {
     const { id, data, data: { className, methodName } } = job
     sails.log.debug(`Job ${id}: ${className}.${methodName}`)
-    if (className === 'Email') {
-      sails.log.debug(`Job ${id}: sent to "${data.email}"`)
-    }
     const fn = global[className][methodName]
 
     // we wrap the method call in a promise so that if it throws an error
@@ -48,7 +45,8 @@ function setupQueue (name, handler) {
       sails.log.debug(label + 'done')
       done()
     } catch (err) {
-      const data = { jobId: job.id, jobData: job.data }
+      // Queue arguments can include verification links, invitations and personal data.
+      const data = { jobId: job.id, className: job.data.className, methodName: job.data.methodName }
       const error = typeof err === 'string'
         ? new Error(err)
         : (err || new Error('kue job failed without error'))

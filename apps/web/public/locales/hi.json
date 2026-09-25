@@ -3048,5 +3048,14 @@
   "No role": "No role",
   "Only members with one of the required roles will actually be able to join the space.": "Only members with one of the required roles will actually be able to join the space.",
   "Go to group roles": "Go to group roles",
-  "Selected space": "चयनित स्पेस"
+  "Selected space": "चयनित स्पेस",
+  "External sign-in providers": "बाहरी साइन-इन प्रदाता",
+  "Confirm your current Hylo password to connect a provider. Your local login remains available.": "प्रदाता जोड़ने के लिए अपना वर्तमान Hylo पासवर्ड दर्ज करें। आपका स्थानीय लॉगिन उपलब्ध रहेगा।",
+  "Current Hylo password": "वर्तमान Hylo पासवर्ड",
+  "Unable to connect the provider. Check your password and verified email, then try again.": "प्रदाता नहीं जोड़ा जा सका। अपना पासवर्ड और सत्यापित ईमेल जाँचें, फिर दोबारा प्रयास करें।",
+  "Sign-in provider connected.": "साइन-इन प्रदाता जुड़ गया।",
+  "Connect {{provider}}": "{{provider}} जोड़ें",
+  "Sign in with {{provider}}": "{{provider}} से साइन इन करें",
+  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "प्रदाता से साइन-इन विफल हुआ। स्थानीय लॉगिन से प्रवेश करें और पहले खाता सेटिंग में प्रदाता जोड़ें, या दोबारा प्रयास करें।",
+  "Payments are disabled on this instance.": "इस इंस्टेंस पर भुगतान बंद हैं।"
 }

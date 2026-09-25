@@ -35,7 +35,9 @@ module.exports.http = {
     sentry: require('../lib/sentry').errorHandler(),
 
     requestLogger: function (req, res, next) {
-      sails.log.info(magenta(`${req.method} ${req.url}`))
+      // Authorization codes and state must not be written to access logs.
+      const loggedUrl = req.path.startsWith('/noo/login/oidc/') || req.path === '/noo/password-reset' ? req.path : req.url
+      sails.log.info(magenta(`${req.method} ${loggedUrl}`))
       next()
     },
 

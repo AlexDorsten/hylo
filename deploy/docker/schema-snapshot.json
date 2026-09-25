@@ -1,0 +1,8 @@
+{
+  "reviewedSchemaCommit": "bb8bd755c5dd49cfe5154afd9c4d438b054ebae5",
+  "schemaSha256": "6f7b626479db4149381a159fe34a349ada1701c19dd3e138e6d88edd48d04d02",
+  "migrationsSha256": "a05ee539330fa19e28587e99fa3d94cf96df42e6920af778cb7dfdd433a1b97d",
+  "reviewedAdditions": [
+    "20260925110000_external_oidc_identities.js"
+  ]
+}

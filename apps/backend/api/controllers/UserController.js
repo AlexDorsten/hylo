@@ -4,10 +4,12 @@ import InvitationService from '../services/InvitationService'
 import OIDCAdapter from '../services/oidc/KnexAdapter'
 import { decodeHyloJWT } from '../../lib/HyloJWT'
 import { joinRoom, leaveRoom } from '../services/Websockets'
+import { registrationEnabled } from '../../lib/authentication.cjs'
 
 module.exports = {
 
   create: async function (req, res) {
+    if (!registrationEnabled(process.env)) return res.status(403).json({ error: 'REGISTRATION_DISABLED' })
     const { name, email, groupId, isAdministrator, isCoordinator } = req.allParams()
     const group = groupId && await Group.find(groupId)
     const assignAdministrator = [isAdministrator, isCoordinator].some(value => value === true || value === 'true')
@@ -54,14 +56,16 @@ module.exports = {
 
     return User.create(attrs)
       .then(async (user) => {
-        Queue.classMethod('Email', 'sendFinishRegistration', {
-          email,
+        const { token } = await UserVerificationCode.create(user.get('email'))
+        await Queue.classMethod('Email', 'sendFinishRegistration', {
+          email: user.get('email'),
+          locale: user.getLocale(),
           templateData: {
             api_client: req.api_client?.name,
             group_name: group && group.get('name'),
             group_avatar_url: group && group.get('avatar_url'),
             group_url: Frontend.Route.group(group),
-            verify_url: Frontend.Route.verifyEmail(email, user.generateJWT())
+            verify_url: Frontend.Route.verifyEmail(user.get('email'), token)
           }
         })
 

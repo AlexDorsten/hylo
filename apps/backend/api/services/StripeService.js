@@ -6,18 +6,13 @@
  * and payment processing for groups.
  */
 
-const Stripe = require('stripe')
+const { stripeClient } = require('../../lib/payments.cjs')
 const {
   resolvePeriodUnitAmountCentsSync,
   resolvePeriodPriceCentsForCredit
 } = require('../../lib/membershipChangeCredit')
 const { getLocaleStrings } = require('../../lib/i18n/locales')
 const { plainTextOfferingDescription } = require('../../lib/stripeOfferingMetadata')
-
-// Initialize Stripe with API version
-// TODO STRIPE: Replace with your actual Stripe secret key
-// Set this in your environment variables as STRIPE_SECRET_KEY
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
 
 // Cached platform-contribution price IDs per connected account (created on first use)
 // Key: accountId (or 'platform' for platform account), Value: priceId
@@ -54,20 +49,7 @@ function getStripeContributionCopy ({ locale, currency }) {
   }
 }
 
-// Validate that Stripe secret key is configured
-if (!STRIPE_SECRET_KEY) {
-  throw new Error(
-    '🔴 STRIPE_SECRET_KEY environment variable is not set. ' +
-    'Please add STRIPE_SECRET_KEY to your .env file or environment variables. ' +
-    'You can find this in your Stripe Dashboard: https://dashboard.stripe.com/apikeys'
-  )
-}
-
-// Initialize Stripe client with the latest API version
-// Note: API version should match what Stripe expects - check Stripe dashboard for latest
-const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2025-10-29.clover' // Updated to match Stripe's expected version
-})
+const stripe = stripeClient({ apiVersion: '2025-10-29.clover' })
 
 module.exports = {
 

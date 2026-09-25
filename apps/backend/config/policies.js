@@ -21,7 +21,12 @@
 module.exports.policies = {
   '*': false,
 
+  InstanceController: { capabilities: true },
+  PasswordRecoveryController: { show: true, complete: true },
+
   AdminController: {
+    stripeAnalytics: ['isAdmin', 'paymentsEnabled'],
+    setStripeSalesPaused: ['isAdmin', 'paymentsEnabled'],
     '*': 'isAdmin'
   },
 
@@ -29,13 +34,31 @@ module.exports.policies = {
     '*': true
   },
 
+  ExternalOidcController: {
+    capabilities: true,
+    start: true,
+    callback: true,
+    link: 'sessionAuth'
+  },
+
   SessionController: {
     createWithJWT: ['checkJWT'],
+    startGoogleOAuth: 'enabledLoginProvider',
+    finishGoogleOAuth: 'enabledLoginProvider',
+    finishGoogleTokenOAuth: 'enabledLoginProvider',
+    startLinkedinOAuth: 'enabledLoginProvider',
+    finishLinkedinOAuth: 'enabledLoginProvider',
+    finishLinkedinTokenOAuth: 'enabledLoginProvider',
+    startFacebookOAuth: 'enabledLoginProvider',
+    finishFacebookOAuth: 'enabledLoginProvider',
+    finishFacebookTokenOAuth: 'enabledLoginProvider',
+    finishAppleOAuth: 'enabledLoginProvider',
+
     '*': true
   },
 
   SubscriptionController: {
-    '*': true
+    '*': 'paymentsEnabled'
   },
 
   CookieConsentController: {
@@ -89,13 +112,13 @@ module.exports.policies = {
   },
 
   PaymentController: {
-    registerStripe: ['sessionAuth']
+    registerStripe: ['sessionAuth', 'paymentsEnabled']
   },
 
   StripeController: {
-    webhook: true,
-    checkoutSuccess: true,
-    checkoutCancel: true,
-    health: true
+    webhook: 'paymentsEnabled',
+    checkoutSuccess: 'paymentsEnabled',
+    checkoutCancel: 'paymentsEnabled',
+    health: 'paymentsEnabled'
   }
 }

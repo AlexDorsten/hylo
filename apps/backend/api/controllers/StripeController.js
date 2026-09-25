@@ -9,10 +9,10 @@
  */
 
 const StripeService = require('../services/StripeService')
-const Stripe = require('stripe')
+const { stripeClient } = require('../../lib/payments.cjs')
 const { parseJsonObject: parseAccessGrants } = require('../../lib/stripeOfferingMetadata')
 const { grantCheckoutSessionAccess } = require('../../lib/grantCheckoutSessionAccess')
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+const stripe = stripeClient({
   apiVersion: '2025-10-29.clover'
 })
 /* global bookshelf, StripeAccount, StripeProduct, ContentAccess, GroupMembership, Group, User, Track, Frontend, SubscriptionChangeEvent */

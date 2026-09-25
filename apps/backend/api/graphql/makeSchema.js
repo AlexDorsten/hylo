@@ -1,3 +1,4 @@
+import { paymentResolvers } from '../../lib/payments.cjs'
 import { createSchema } from 'graphql-yoga'
 import { GraphQLError } from 'graphql'
 import { readFileSync } from 'fs'
@@ -404,7 +405,7 @@ export function makeUnionAndInterfaceResolvers (models) {
 
 // Queries that non-logged in users can make
 export function makePublicQueries ({ fetchOne, fetchMany }) {
-  return {
+  return paymentResolvers({
     checkInvitation: (root, { invitationToken, accessCode }) =>
       InvitationService.check(invitationToken, accessCode),
     // Can only access public communities and posts, unless a valid invitation is provided
@@ -426,12 +427,12 @@ export function makePublicQueries ({ fetchOne, fetchMany }) {
     posts: (root, args) => fetchMany('Post', Object.assign(args, { isPublic: true })),
     publicStripeOfferings: (root, { groupId }) => publicStripeOfferings(null, { groupId }),
     publicStripeOffering: (root, { offeringId }) => publicStripeOffering(null, { offeringId })
-  }
+  })
 }
 
 // Queries that logged in users can make
 export function makeAuthenticatedQueries ({ fetchOne, fetchMany }) {
-  return {
+  return paymentResolvers({
     activity: (root, { id }) => fetchOne('Activity', id),
     checkContentAccess: (root, args, context) => checkContentAccess(context.currentUserId, args),
     checkInvitation: (root, { invitationToken, accessCode }) =>
@@ -564,11 +565,11 @@ export function makeAuthenticatedQueries ({ fetchOne, fetchMany }) {
       const banners = await SiteBanner.all()
       return banners.toModelArray ? banners.toModelArray() : banners
     }
-  }
+  })
 }
 
 export function makePublicMutations ({ fetchOne }) {
-  return {
+  return paymentResolvers({
     login: login(fetchOne),
     logout,
     sendEmailVerification,
@@ -576,11 +577,11 @@ export function makePublicMutations ({ fetchOne }) {
     register: register(fetchOne),
     verifyEmail: verifyEmail(fetchOne),
     createStripeCheckoutSession: (root, { groupId, offeringId, quantity, adjustableQuantity, successUrl, cancelUrl, metadata }) => createStripeCheckoutSession(null, { groupId, offeringId, quantity, adjustableQuantity, successUrl, cancelUrl, metadata })
-  }
+  })
 }
 
 export function makeMutations ({ fetchOne }) {
-  return {
+  return paymentResolvers({
     // Currently injecting all Public Mutations here so those resolvers remain
     // available between auth'd and non-auth'd sessions
     ...makePublicMutations({ fetchOne }),
@@ -926,7 +927,7 @@ export function makeMutations ({ fetchOne }) {
     deleteSiteBanner: (root, { id }, context) => deleteSiteBanner(context.currentUserId, id),
 
     dismissSiteBanner: (root, { id }, context) => dismissSiteBanner(context.currentUserId, id)
-  }
+  })
 }
 
 export function makeApiQueries ({ fetchOne, fetchMany }) {

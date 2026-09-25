@@ -37,7 +37,9 @@ module.exports = {
   farmdev: Object.assign({}, defaults, { seeds: { directory: './seeds/farm-dev' } }),
   farmdemo: Object.assign({}, defaults, { seeds: { directory: './seeds/farm-demo' } }),
   staging: defaults,
-  production: merge({ connection: { ssl: { rejectUnauthorized: false } } }, defaults),
+  // Private container networks may explicitly disable database TLS. Preserve the
+  // existing hosted-production default unless the operator opts out.
+  production: merge({ connection: { ssl: process.env.HYLO_DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false } } }, defaults),
   docker: Object.assign({},
     defaults,
     {

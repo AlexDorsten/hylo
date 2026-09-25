@@ -3,10 +3,12 @@ import request from 'request'
 import { Validators } from '@hylo/shared'
 import { decodeHyloJWT } from '../../../lib/HyloJWT'
 import sentry from '../../../lib/sentry'
+import { registrationEnabled } from '../../../lib/authentication.cjs'
 
 // Sign-up Related
 
 export const sendEmailVerification = async (_, { email }) => {
+  if (!registrationEnabled(process.env)) return { success: false, error: 'REGISTRATION_DISABLED' }
   try {
     let user = await User.find(email, {}, false)
 
@@ -17,13 +19,10 @@ export const sendEmailVerification = async (_, { email }) => {
     const { code, token } = await UserVerificationCode.create(email)
     const verifyUrl = Frontend.Route.verifyEmail(email, token)
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`!!! Verification for ${email} -- code: ${code} link: ${verifyUrl}`)
-    }
-
-    Queue.classMethod('Email', 'sendEmailVerification', {
+    await Queue.classMethod('Email', 'sendEmailVerification', {
       email,
       version: 'with link',
+      locale: user.getLocale(),
       templateData: {
         code,
         verify_url: verifyUrl
@@ -37,6 +36,7 @@ export const sendEmailVerification = async (_, { email }) => {
 }
 
 export const verifyEmail = (fetchOne) => async (_, { email: providedEmail, code: providedCode, token }, context) => {
+  if (!registrationEnabled(process.env)) return { error: 'REGISTRATION_DISABLED' }
   try {
     const decodedToken = token && decodeHyloJWT(token)
     const email = decodedToken?.sub || providedEmail
@@ -63,6 +63,7 @@ export const verifyEmail = (fetchOne) => async (_, { email: providedEmail, code:
 }
 
 export const register = (fetchOne) => async (_, { name, password }, context) => {
+  if (!registrationEnabled(process.env)) return { error: 'REGISTRATION_DISABLED' }
   try {
     const user = await User.find(context.currentUserId, {}, false)
 
@@ -117,22 +118,9 @@ export const logout = async (root, args, context) => {
 
 // Other User resolvers
 
-export const sendPasswordReset = async (_, { email }) => {
+export const sendPasswordReset = async (_, { email }, context) => {
   try {
-    const user = await User.query(q => q.whereRaw('lower(email) = ?', email.toLowerCase())).fetch()
-
-    if (user) {
-      const nextUrl = Frontend.Route.evo.passwordSetting()
-      const token = user.generateJWT()
-
-      Queue.classMethod('Email', 'sendPasswordReset', {
-        email: user.get('email'),
-        templateData: {
-          login_url: Frontend.Route.jwtLogin(user, token, nextUrl)
-        }
-      })
-    }
-
+    await PasswordRecovery.request({ email, ip: context?.req?.ip })
     return { success: true }
   } catch (error) {
     return { success: false }

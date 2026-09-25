@@ -4,6 +4,7 @@ import crypto from 'crypto'
 import { Validators } from '@hylo/shared'
 import OIDCAdapter from '../services/oidc/KnexAdapter'
 import { mintTokensForUser } from '../services/OIDCTokens'
+import { registrationEnabled } from '../../lib/authentication.cjs'
 
 const sentry = require('../../lib/sentry')
 
@@ -66,6 +67,11 @@ const ensureUserNameFromProfile = async (user, profile) => {
 const upsertUser = (req, service, profile, { tokenAuth = false } = {}) => {
   return findUser(service, profile.email, profile.id)
   .then(async (user) => {
+    // An unfinished email/API signup must not become a new account through OAuth.
+    // Completed, self-deactivated accounts retain their normal login behavior.
+    if (!registrationEnabled(process.env) && (!user || !user.relations.linkedAccounts.length)) {
+      throw new Error('REGISTRATION_DISABLED')
+    }
     if (user) {
       await ensureUserNameFromProfile(user, profile)
       if (tokenAuth) {
@@ -99,8 +105,12 @@ const upsertUser = (req, service, profile, { tokenAuth = false } = {}) => {
   })
 }
 
-const upsertLinkedAccount = (req, service, profile) => {
+const upsertLinkedAccount = async (req, service, profile) => {
   var userId = req.session.userId
+  // Verified signup stubs already have a session, but no completed credential.
+  if (!registrationEnabled(process.env) && !(await LinkedAccount.where({ user_id: userId }).fetch())) {
+    throw new Error('REGISTRATION_DISABLED')
+  }
   return LinkedAccount.where({provider_key: service, provider_user_id: profile.id}).fetch()
   .then(account => {
     if (account) {
@@ -318,11 +328,11 @@ module.exports = {
     passport.authenticate('linkedin')(req, res)
   }),
 
-  finishLinkedinOauth: function (req, res, next) {
+  finishLinkedinOAuth: function (req, res, next) {
     return finishOAuth('linkedin', req, res, next)
   },
 
-  finishLinkedinTokenOauth: function (req, res, next) {
+  finishLinkedinTokenOAuth: function (req, res, next) {
     return finishOAuth('linkedin-token', req, res, next)
   },
 

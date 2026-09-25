@@ -1,4 +1,4 @@
-const { HYLO_TRUSTED_BROWSER_ORIGINS } = require('../corsAllowedOrigins')
+const { hyloCorsAllowedOrigins } = require('../corsAllowedOrigins')
 
 /**
  * Production environment settings
@@ -41,6 +41,6 @@ module.exports = {
   },
 
   sockets: {
-    onlyAllowOrigins: [...HYLO_TRUSTED_BROWSER_ORIGINS]
+    onlyAllowOrigins: hyloCorsAllowedOrigins()
   }
 };

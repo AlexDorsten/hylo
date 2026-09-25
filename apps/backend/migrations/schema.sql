@@ -7121,5 +7121,15 @@ ALTER TABLE ONLY public.zapier_triggers
 -- PostgreSQL database dump complete
 --
 
+
+-- External OIDC login identities; separate from the embedded token issuer.
+CREATE TABLE public.external_oidc_identities (
+    issuer character varying(512) NOT NULL,
+    subject character varying(255) NOT NULL,
+    user_id bigint NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT external_oidc_identities_pkey PRIMARY KEY (issuer, subject)
+);
+CREATE INDEX external_oidc_identities_user_id_index ON public.external_oidc_identities USING btree (user_id);
 \unrestrict tUF07NWBIyBoffLToE0SeitR4QkNiJF7GirKbknzPG6fJr35GuUbD46h1N7i2kX
 

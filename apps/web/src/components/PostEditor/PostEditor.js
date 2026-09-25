@@ -1,3 +1,4 @@
+import useInstanceCapabilities from 'hooks/useInstanceCapabilities'
 /* global DOMParser */
 import { cn } from 'util/index'
 import useTour from 'tours/useTour'
@@ -172,6 +173,7 @@ function PostEditorInner ({
   selectedLocation,
   draftId
 }, ref) {
+  const { payments } = useInstanceCapabilities()
   const dispatch = useDispatch()
   const urlLocation = useLocation()
   const { pathname, search } = urlLocation
@@ -1814,7 +1816,7 @@ function PostEditorInner ({
           </div>
         </div>
       )}
-      {currentPost.type === 'project' && currentUser.hasFeature(PROJECT_CONTRIBUTIONS) && (
+      {payments && currentPost.type === 'project' && currentUser.hasFeature(PROJECT_CONTRIBUTIONS) && (
         <div className='flex items-center border-2 border-transparent transition-all'>
           <div className='text-sm text-foreground/80 whitespace-nowrap mr-4'>{t('Accept Contributions')}</div>
           {hasStripeAccount && (
