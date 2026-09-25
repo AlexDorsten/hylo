@@ -1,37 +1,17 @@
 import { GraphQLError } from 'graphql'
 import { JSDOM } from 'jsdom'
+import { canAccessDiscussion } from '../../lib/discussionAccess'
 
 const fail = code => { throw new GraphQLError(code, { extensions: { code } }) }
 const denied = () => fail('DISCUSSION_ACCESS_DENIED')
 
-// Do not use Post.isVisibleToUser: following a private post can survive leaving
-// its group. Every read (including history) checks current membership instead.
+// The overview/history remain member-only, even on a public discussion.
 async function access (db, userId, postId, editing = false) {
   if (!userId || !/^\d+$/.test(String(postId))) denied()
   const postQuery = db('posts').where({ id: postId, active: true, type: 'discussion' })
   const post = await (editing ? postQuery.forUpdate() : postQuery).first()
-  if (!post || !await db('users').where({ id: userId, active: true }).first()) denied()
-  const groups = await db('groups').where({ active: true })
-    .whereIn('id', db('groups_posts').select('group_id').where('post_id', postId))
-  const scopes = groups.map(group => String(group.parent_id || group.id))
-  const memberships = await db('group_memberships')
-    .join('groups as membership_group', 'membership_group.id', 'group_memberships.group_id')
-    .where({ 'group_memberships.user_id': userId, 'group_memberships.active': true, 'membership_group.active': true })
-    .whereIn('group_memberships.group_id', [...groups.map(group => String(group.id)), ...scopes])
-    .select('group_memberships.group_id')
-  const memberIds = memberships.map(member => String(member.group_id))
-  const roles = await db('group_memberships_group_roles as assignment')
-    .join('groups_roles as role', 'role.id', 'assignment.group_role_id')
-    .join('group_roles_responsibilities as link', 'link.group_role_id', 'assignment.group_role_id')
-    .join('responsibilities as responsibility', 'responsibility.id', 'link.responsibility_id')
-    .where({ 'assignment.user_id': userId, 'assignment.active': true, 'role.active': true, 'responsibility.type': 'system' })
-    .whereIn('assignment.group_id', scopes.filter(id => memberIds.includes(id)))
-    .whereIn('responsibility.title', ['Administration', 'Manage Content'])
-    .select('assignment.group_id')
-  const moderator = roles.length > 0
-  if (!moderator && !groups.some(group => memberIds.includes(String(group.id)))) denied()
-  const canEdit = moderator || String(post.user_id) === String(userId)
-  if (editing && !canEdit) denied()
+  if (!post || !await canAccessDiscussion(userId, postId, { db, memberOnly: true, editing })) denied()
+  const canEdit = editing || await canAccessDiscussion(userId, postId, { db, editing: true })
   return { post, canEdit }
 }
 

@@ -61,12 +61,30 @@ source access at delivery. Direct in-app delivery and notification events on
 comments and recheck each recipient before sending; a retained follow is
 insufficient for a private discussion. Empty digest batches return a numeric zero.
 
-The broader #14 access criterion remains open. Persisted notification queries and
-their nested activity relations, general group Socket.IO channels (including
-`newPost`), remaining mutations and inherited-moderator policy alignment still
-need review. The covered delivery checks do not protect those separate paths.
-Passing these tests is not evidence that every existing Hylo content channel meets
-the release criteria.
+Persisted notifications and direct activity reads now apply recipient and source
+visibility before pagination, including totals. Nested post/comment getters read
+fresh content instead of reusing schema-level relation caches. Deleted sources and
+inactive recipients are excluded; unrelated activities without a source are retained.
+
+Private `newPost` events in both group and parent-space channels use personal group
+rooms and current authorization. Creation publishes only after its transaction
+commits. Overview, post/comment reads, search, notifications and socket delivery
+share the active membership/moderation policy, including inherited space moderators.
+A site-administrator session alone does not grant private discussion membership.
+Editing/deletion, comment deletion, bookmarks, reactions and the covered pin/remove
+paths check current discussion permission. Reactions reject deleted comments and
+posts; ordinary private-message behavior remains covered.
+
+The review reproduced failures in persisted activity visibility, cached content,
+group broadcasts and inherited moderation, then added regression cases before the
+fixes. Adjacent tests also caught SQL NULL handling for older untyped posts; the
+shared restriction preserves those non-discussion paths. Notification fixtures now
+set the recipient as production Activity.createNotifications does.
+
+The #14 release gate still requires the integrated deployment and complete CI on
+that revision. These tests document bounded discussion paths; they are not an audit
+of every existing Hylo endpoint or a guarantee against all concurrent permission
+changes. Already delivered data cannot be recalled.
 Native mobile clients, full assistive-technology testing and production integration
 are also not claimed by this change.
 
@@ -79,7 +97,7 @@ creates and drops that database. Never point it at a populated installation.
 With the repository's test PostgreSQL/PostGIS, Redis, Node 24 and Yarn 4 setup:
 
 ```sh
-yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js test/unit/graphql/Discussions.test.js test/unit/graphql/DiscussionAccess.test.js test/unit/graphql/DiscussionDelivery.test.js --timeout 10000
+yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js test/unit/graphql/Discussions.test.js test/unit/graphql/DiscussionAccess.test.js test/unit/graphql/DiscussionDelivery.test.js test/unit/graphql/DiscussionRemainingAccess.test.js --timeout 10000
 yarn workspace web test --watchAll=false --runInBand --runTestsByPath src/components/PostEditor/PostEditor.test.js src/components/DiscussionOverview/DiscussionOverview.test.js src/routes/PostDetail/PostDetail.test.js src/routes/PostDetail/Comments/CommentForm/CommentForm.test.js
 yarn workspace web test:e2e:isolated authenticated.discussion-overview.spec.js --project=chromium --project=mobile-chrome
 yarn workspace web build
@@ -100,10 +118,9 @@ members/public readers. Transport testing also reproduced an existing worker
 shutdown error: the emitter's Redis client has a callback-based `quit`, not a
 Promise-based API; cleanup now uses that API.
 
-The focused CI selection passes 54 tests, including 22 delivery cases. Another
-38 existing notification, comment digest and inbound-post tests pass locally. The
-notification fixture now creates an active comment, as production comment creation
-does.
+The focused backend selection passes 82 tests, including 26 delivery cases and
+24 persisted-access/moderation cases. Another 117 existing notification, comment,
+post, search and REST-policy tests pass locally, with one existing search skip.
 Legacy CommonJS tests require Mocha's synchronous loader because its default ESM
 import path conflicts with `mock-require` on the tested Node 24 runtime. No
 test-runner dependency change is included here. The preceding access increment
@@ -117,11 +134,12 @@ Three independent browser scenarios cover author editing/history/locales,
 participant replies/direct links/revocation, and outsider denial. Each creates its
 own database-backed fixture. Splitting the previous serial scenario isolates
 failures and avoids sharing one timeout across all three workflows. All six
-desktop/mobile scenarios plus auth setup passed locally with eight configured
+desktop/mobile scenarios plus auth setup passed locally with two configured
 workers; that does not replace the full CI suite. Secondary participant contexts
 use the project's mobile user agent and touch settings as well as viewport size.
-The full GitHub workflow for the preceding revision `71950a030` passed; the new
-delivery suite is added to that workflow and needs its own successful run.
+The full GitHub workflow for the preceding revision `21b231eec` passed. The new
+persisted-access selection is added to that workflow and needs its own successful
+run on this revision.
 Screenshots below use
 the actual device width and a taller capture viewport to show the entire panel.
 
@@ -147,7 +165,7 @@ Before a production rollout:
    checks and the complete CI suite on that exact integrated revision.
 4. Restart every API and worker process together so no old publisher keeps sending
    private discussion events to shared rooms. Existing clients must reconnect and
-   rejoin both shared and personal post rooms. A mixed-version rollout does not
+   rejoin both shared and personal post/group rooms. A mixed-version rollout does not
    provide the new delivery boundary.
 5. Verify backup/restore includes discussion history. For application rollback,
    retain the additive table. Running the migration's `down` drops all saved

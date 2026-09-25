@@ -1,5 +1,6 @@
 /* globals _, ProjectContribution */
 
+import { canAccessDiscussion } from '../../lib/discussionAccess'
 import data from '@emoji-mart/data'
 import { init, getEmojiDataFromNative } from 'emoji-mart'
 import { difference, filter, get, omitBy, uniq, uniqBy, isEmpty, isUndefined, pick } from 'lodash/fp'
@@ -947,7 +948,7 @@ module.exports = bookshelf.Model.extend(Object.assign({
     if (!/^\d+$/.test(String(postId)) || !userId) return false
     const post = await Post.find(postId)
     if (!post) return false
-    if (post.get('type') === Post.Type.DISCUSSION && !await User.where({ id: userId, active: true }).fetch()) return false
+    if (post.get('type') === Post.Type.DISCUSSION) return canAccessDiscussion(userId, postId)
     if (post.isPublic()) return true
 
     const membership = await bookshelf.knex('groups_posts')

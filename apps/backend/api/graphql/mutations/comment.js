@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql'
 import { isEmpty, merge, trim } from 'lodash'
 import { includes } from 'lodash/fp'
+import { canModerateDiscussion } from '../../../lib/discussionAccess'
 
 import underlyingDeleteComment from '../../models/comment/deleteComment'
 import underlyingCreateComment, { pushMessageUpdatedToSockets } from '../../models/comment/createComment'
@@ -8,6 +9,14 @@ import underlyingUpdateComment from '../../models/comment/updateComment'
 import { deleteDraftForContext } from './draft'
 
 export async function canDeleteComment (userId, comment) {
+  if (!comment) return false
+  const post = comment.get('post_id') && await Post.find(comment.get('post_id'))
+  if (comment.get('post_id') && !post) return false
+  if (post && post.get('type') === Post.Type.DISCUSSION) {
+    if (!await Post.isVisibleToUser(post.id, userId)) return false
+    if (String(comment.get('user_id')) === String(userId)) return true
+    return canModerateDiscussion(userId, post.id)
+  }
   if (comment.get('user_id') === userId) return true
 
   const commentWithGroups = await comment.load('post.groups')

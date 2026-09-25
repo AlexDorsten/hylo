@@ -32,10 +32,22 @@ The separately versioned summary and open questions provide a useful future revi
 
 The access review found that a retained follow, a requested search group or a previously opened live channel could outlast actual membership. Those must never authorize a future assistant's sources. Explicitly selected, currently readable comments could help draft a source-linked summary or list unanswered questions; check each selected source again when collecting inputs, releasing a completed draft and opening or exporting it later. If access changes during generation, withhold the derived draft and require a fresh authorized selection. Removing a user from a group cannot erase information already received by that user or a provider.
 
-Human review must show the selected sources, their revisions, omissions and any access changes before publishing a normal overview revision. Test cross-post reply references, revoked access during generation, stale search results, deleted sources and citations to inaccessible contributions. The GraphQL/search and delivery checks cover only the paths documented in the review notes; persisted notification queries, general group channels and other uncovered paths remain under review. No broad data connector, AI provider or automatic summary publication is introduced or authorized by this slice.
+Human review must show the selected sources, their revisions, omissions and any access changes before publishing a normal overview revision. Test cross-post reply references, revoked access during generation, stale search results, deleted sources and citations to inaccessible contributions. The GraphQL/search and delivery checks cover only the paths documented in the review notes, now including persisted discussion notifications, private new-post group events and inherited moderation. They do not establish permission for an arbitrary connector or generated draft. No broad data connector, AI provider or automatic summary publication is introduced or authorized by this slice.
 
 ## Current assessment: delayed delivery and reading guides
 
 An optional assistant could draft a catch-up digest from explicitly selected, currently readable contributions and approved overview revisions. The new delivery checks illustrate an additional requirement: queue creation is not authorization to deliver later. Recheck every source and the intended recipient when releasing a generated digest or notification, and again when opening a saved draft. A previously joined socket, retained follow or preloaded activity must not bypass that check.
 
 Before publication, a human reviews source links, disagreements, unresolved questions and the draft's date. Withhold drafts whose sources became inaccessible or were deleted; do not quietly produce a misleading partial summary. Test membership loss during generation and queueing, public-to-private changes, inactive accounts/groups, deleted comments, another linked group still granting access, and cross-recipient delivery. Already received information cannot be recalled. This is an assessment only: no automated reading guide, AI service or external transmission is added.
+
+## Current assessment: persisted drafts and moderator access
+
+A saved catch-up guide or suggested summary could remain useful across visits, but
+its storage row and every nested source link must enforce the intended recipient's
+current access. Pagination, counts and cached source excerpts must not reveal
+inaccessible material. A moderator role is valid only while its group, assignment
+and membership remain active; ordinary membership in a parent group grants no
+private-space access. People review source versions, unresolved objections and
+omissions before publishing any assisted text. Test role removal, disabled roles,
+source deletion, cross-recipient records and stale schema caches. No AI service,
+provider configuration or data transfer is introduced by these access changes.

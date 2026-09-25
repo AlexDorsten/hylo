@@ -26,7 +26,8 @@ export default async function createPost (userId, params) {
       }).catch(function (error) {
         throw error
       }))
-    .then(post => {
+    .then(async post => {
+      await notifyPostCreated(post, params.localId)
       if (remoteImageUrls.length > 0) {
         Queue.classMethod('Post', 'rehostAndAttachImages', {
           postId: post.id,
@@ -107,7 +108,7 @@ export function afterCreatingPost (post, opts) {
     .then(() => post.isProposal() && post.setProposalOptions({ options: opts.proposalOptions || [], userId, opts: trxOpts }))
     .then(() => Tag.updateForPost(post, opts.topicNames, userId, trx))
     .then(() => attachOrQueueLinkPreview(post, trx, opts.skip_link_preview))
-    .then(() => notifyAndMarkAuthorRead(post, opts.localId, trx))
+    .then(() => markAuthorRead(post, trx))
     // Mass GroupMembership / GroupViewUser new_post_count updates can touch thousands of
     // rows. Run in the background like delete.
     .then(() => Queue.classMethod('Post', 'incrementNewPostCountForCreatedPost', { postId: post.id }, 0))
@@ -239,16 +240,11 @@ export async function incrementNewPostCount (post) {
   }))
 }
 
-/**
- * After tags are synced: notify sockets, bump GroupTag freshness, and mark the
- * author's matching views read up to this post (typed common view + chat when applicable).
- */
-async function notifyAndMarkAuthorRead (post, localId, trx) {
-  await post.load([
-    'media', 'groups', 'linkPreview', 'tags', 'user'
-  ], { transacting: trx })
-
-  const { tags, groups } = post.relations
+// Called only after the create transaction commits, so authorization sees the
+// new post and its group links; a rolled-back post must never be broadcast.
+async function notifyPostCreated (post, localId) {
+  await post.load(['media', 'groups', 'linkPreview', 'tags', 'user'])
+  const { groups } = post.relations
 
   // NOTE: the payload object is released to many users, so it cannot be
   // subject to the usual permissions checks (which groups
@@ -282,6 +278,12 @@ async function notifyAndMarkAuthorRead (post, localId, trx) {
     ))
   })
 
+  await Promise.all(notifySockets)
+}
+
+async function markAuthorRead (post, trx) {
+  await post.load(['tags', 'groups'], { transacting: trx })
+  const { tags, groups } = post.relations
   const groupTagsQuery = GroupTag.query(q => {
     q.whereIn('tag_id', tags.map('id'))
   }).query()
@@ -328,7 +330,6 @@ async function notifyAndMarkAuthorRead (post, localId, trx) {
   ))
 
   return Promise.all([
-    notifySockets,
     trackAsNewPost && groupTagsQuery.update({ updated_at: new Date() })
   ])
 }

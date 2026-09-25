@@ -1,3 +1,4 @@
+import { accessibleActivityIds } from '../../lib/discussionAccess'
 import { isEmpty } from 'lodash'
 import { get, includes } from 'lodash/fp'
 import { refineOne } from './util/relations'
@@ -1314,21 +1315,9 @@ module.exports = bookshelf.Model.extend({
     const activity = await Activity.find(this.get('activity_id'))
     if (!activity) return false
     const readerId = activity.get('reader_id')
-    if (!readerId || (userId && String(userId) !== String(readerId))) return false
+    if (!readerId || String(this.get('user_id')) !== String(readerId) || (userId && String(userId) !== String(readerId))) return false
 
-    const postIds = new Set()
-    if (activity.get('post_id')) postIds.add(activity.get('post_id'))
-    if (activity.get('comment_id')) {
-      const comment = await Comment.find(activity.get('comment_id'))
-      if (!comment?.get('active')) return false
-      postIds.add(comment.get('post_id'))
-    }
-    for (const postId of postIds) {
-      const post = await Post.find(postId)
-      if (!post) return false
-      if (post.get('type') === Post.Type.DISCUSSION && !await Post.isVisibleToUser(postId, readerId)) return false
-    }
-    return true
+    return !!await accessibleActivityIds(readerId).where('activities.id', activity.id).first()
   },
 
   updateUserSocketRoom: async function (userId) {

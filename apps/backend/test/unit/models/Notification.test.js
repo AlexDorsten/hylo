@@ -29,6 +29,7 @@ const preloadNotification = (activity, medium) =>
     .save()
     .then(a => new Notification({
       activity_id: a.id,
+      user_id: a.get('reader_id'),
       medium
     }).save())
     .then(n => n.load(relations))

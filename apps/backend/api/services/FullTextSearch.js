@@ -1,5 +1,6 @@
 /* globals bookshelf, Group */
 import { compact, omit } from 'lodash'
+import { readableDiscussionIds, restrictDiscussionAccess } from '../../lib/discussionAccess'
 
 const tableName = 'search_index'
 const columnName = 'document'
@@ -101,6 +102,12 @@ const applyMemberGroupFilter = (subquery, groupAccess) => {
 const applyGroupAccessFilter = (qb, groupAccess) => {
   const hasExplicitGroupIds = groupAccess.groupIds && groupAccess.groupIds.length > 0
   const hasMemberGroups = groupAccess.userId || hasExplicitGroupIds
+  const db = bookshelf.knex
+  const discussionIds = readableDiscussionIds(groupAccess.userId, db, { memberOnly: !!hasExplicitGroupIds })
+  if (hasExplicitGroupIds) {
+    discussionIds.whereIn('discussion_post.id',
+      db('groups_posts').select('post_id').whereIn('group_id', groupAccess.groupIds))
+  }
 
   qb.andWhere(function () {
     if (hasMemberGroups) {
@@ -131,7 +138,18 @@ const applyGroupAccessFilter = (qb, groupAccess) => {
             .where({ 'p.is_public': true, 'c.active': true })
         })
     }
+    // Parent moderation also grants discussion access in spaces, without
+    // expanding access to people or other post types.
+    this.orWhereIn('post_id', discussionIds.clone())
+      .orWhereIn('comment_id', db('comments').select('id').whereIn('post_id', discussionIds))
   })
+  // A materialized search index can predate deletion and permission changes.
+  // Check source rows before pagination, independently of index freshness.
+  const currentPosts = db('posts').select('posts.id').where('posts.active', true)
+  restrictDiscussionAccess(currentPosts, groupAccess.userId)
+  qb.where(q => q.whereNull('post_id').orWhereIn('post_id', currentPosts.clone()))
+    .where(q => q.whereNull('comment_id').orWhereIn('comment_id', db('comments').select('id')
+      .where('active', true).whereIn('post_id', currentPosts)))
 }
 
 const recencyRankSql = `(rank * case when sort_ts is null then 1 else exp(-extract(epoch from (now() - sort_ts)) / ${recencyHalfLifeSeconds}.0) end)`

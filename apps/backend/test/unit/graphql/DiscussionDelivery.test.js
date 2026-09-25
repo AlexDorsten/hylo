@@ -5,6 +5,7 @@ import makeSubscriptions from '../../../api/graphql/makeSubscriptions'
 import RedisClient from '../../../api/services/RedisClient'
 import peopleTyping from '../../../api/graphql/mutations/peopleTyping'
 import createComment from '../../../api/models/comment/createComment'
+import createPost from '../../../api/models/post/createPost'
 import * as Websockets from '../../../api/services/Websockets'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
@@ -23,10 +24,10 @@ describe('Discussion delivery after membership changes', () => {
     process.env.NODE_ENV = 'development'
     try { return await fn() } finally { process.env.NODE_ENV = env }
   }
-  const join = user => {
+  const join = (user, type = 'post', id = post.id) => {
     const req = { session: { userId: user.id } }
     const res = { ok: () => {}, serverError: err => { throw err } }
-    Websockets.joinRoom(req, res, 'post', post.id)
+    Websockets.joinRoom(req, res, type, id)
   }
 
   beforeEach(async () => {
@@ -69,6 +70,41 @@ describe('Discussion delivery after membership changes', () => {
     unspyify(Queue, 'classMethod')
   })
 
+  it('sends a newly created discussion only to current group members', async () => {
+    join(author, 'group', group.id)
+    join(member, 'group', group.id)
+    await revoke()
+    const created = await live(() => createPost(author.id, {
+      type: 'discussion',
+      name: 'New private workshop',
+      description: 'New private context',
+      group_ids: [group.id],
+      is_public: false
+    }))
+    expect(created.id).to.exist
+    expect((received.get(author.id) || []).filter(event => event.type === 'newPost')).to.have.length(1)
+    expect((received.get(member.id) || []).filter(event => event.type === 'newPost')).to.have.length(0)
+  })
+
+  it('does not disclose space discussions to ordinary members of the parent room', async () => {
+    await outsider.joinGroup(group)
+    await GroupMembership.assignAdministratorRole(member.id, group.id)
+    const space = await factories.group({ type: 'space', parent_id: group.id, active: true }).save()
+    await author.joinGroup(space)
+    for (const user of [author, member, outsider]) join(user, 'group', group.id)
+    await live(() => createPost(author.id, {
+      type: 'discussion',
+      name: 'Private space workshop',
+      description: 'Space members only',
+      group_ids: [space.id],
+      is_public: false
+    }))
+    for (const user of [author, member]) {
+      expect((received.get(user.id) || []).filter(event => event.type === 'newPost')).to.have.length(1)
+    }
+    expect((received.get(outsider.id) || []).filter(event => event.type === 'newPost')).to.have.length(0)
+  })
+
   for (const kind of ['typing', 'comment']) {
     it(`stops ${kind} content reaching a previously joined socket after membership revocation`, async () => {
       join(author)
@@ -97,8 +133,8 @@ describe('Discussion delivery after membership changes', () => {
     expect(received.get(outsider.id) || []).to.have.length(0)
   })
 
-  for (const transport of ['Sails', 'Redis worker']) {
-    it(`delivers only to current members through the real ${transport} transport`, async () => {
+  for (const [transport, roomType] of ['Sails', 'Redis worker'].flatMap(transport => ['post', 'group'].map(room => [transport, room]))) {
+    it(`delivers only to current members through the real ${transport} ${roomType} transport`, async () => {
       const http = createServer()
       const io = new Server(http, { allowEIO3: true })
       io.adapter(redisAdapter(process.env.REDIS_URL))
@@ -118,7 +154,7 @@ describe('Discussion delivery after membership changes', () => {
           Websockets.joinRoom({ socket, session: { userId } }, {
             ok: () => socket.emit('joined'),
             serverError: err => socket.emit('joinFailed', String(err))
-          }, 'post', post.id)
+          }, roomType, roomType === 'post' ? post.id : group.id)
         })
         for (const user of [author, member]) {
           const client = connect(`http://127.0.0.1:${http.address().port}`, {
@@ -131,12 +167,15 @@ describe('Discussion delivery after membership changes', () => {
           ])
         }
         const memberEvents = []
-        clients[1].on('userTyping', event => memberEvents.push(event))
+        const eventType = roomType === 'post' ? 'userTyping' : 'newPost'
+        clients[1].on(eventType, event => memberEvents.push(event))
         const send = async () => {
-          const delivered = once(clients[0], 'userTyping')
+          const delivered = once(clients[0], eventType)
           if (transport === 'Redis worker') sails.sockets = undefined
           try {
-            await live(() => post.pushTypingToSockets(author.id, author.get('name'), true))
+            await live(() => roomType === 'post'
+              ? post.pushTypingToSockets(author.id, author.get('name'), true)
+              : Websockets.pushToSockets(Websockets.groupRoom(group.id), 'newPost', { id: post.id, details: 'Private contribution' }))
             await delivered
           } finally { sails.sockets = app.sockets }
           // A subsequent packet on the same connection is an ordering barrier,
