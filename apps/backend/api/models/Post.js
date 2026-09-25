@@ -6,7 +6,7 @@ import { difference, filter, get, omitBy, uniq, uniqBy, isEmpty, intersection, i
 import { DateTime } from 'luxon'
 import format from 'pg-format'
 import { flatten, sortBy } from 'lodash'
-import { TextHelpers, DateTimeHelpers } from '@hylo/shared'
+import { TextHelpers, DateTimeHelpers, proposalOptionsEqual } from '@hylo/shared'
 import fetch from 'node-fetch'
 import { postRoom, pushToSockets } from '../services/Websockets'
 import { fulfill, unfulfill } from './post/fulfillPost'
@@ -563,6 +563,9 @@ module.exports = bookshelf.Model.extend(Object.assign({
   async updateProposalOptions ({ options = [], userId, opts = {} }) {
     opts.transacting ||= { transacting: false }
     const existingOptions = await this.proposalOptions().fetch({ transacting: opts.transacting, require: false })
+    // The post editor submits all options even when only the title/body changed.
+    // Preserve both option IDs and ballots when their persisted content is equal.
+    if (proposalOptionsEqual(existingOptions.toJSON(), options)) return
     const existingOptionIds = existingOptions.pluck('id')
 
     // Add activities for vote reset

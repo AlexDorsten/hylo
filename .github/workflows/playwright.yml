@@ -145,6 +145,18 @@ jobs:
             echo "OIDC_KEYS=$(openssl genrsa -traditional 2048 2>/dev/null | base64 -w0)" >> "$GITHUB_ENV"
           fi
 
+      - name: Check proposal option comparison and editor save behavior
+        run: |
+          yarn workspace @hylo/shared test --runInBand --runTestsByPath src/ProposalHelpers.test.js
+          yarn workspace web test --watchAll=false --runInBand --runTestsByPath src/components/PostEditor/PostEditor.test.js
+
+      - name: Check proposal vote persistence against PostgreSQL
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_hylo_proposals
+        run: |
+          createdb --maintenance-db=postgresql://postgres:postgres@localhost:5432/postgres test_hylo_proposals
+          yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js --timeout 10000
+
       - name: Run Playwright E2E (isolated DB + API + web)
         working-directory: apps/web
         run: yarn test:e2e:isolated

@@ -2,7 +2,7 @@
 import React from 'react'
 import mockGraphqlServer from 'util/testing/mockGraphqlServer'
 import { graphql, HttpResponse } from 'msw'
-import { render, screen, waitFor, AllTheProviders } from 'util/testing/reactTestingLibraryExtended'
+import { act, fireEvent, render, screen, waitFor, AllTheProviders } from 'util/testing/reactTestingLibraryExtended'
 import orm from 'store/models'
 import PostEditor from './PostEditor'
 import ActionsBar from './ActionsBar'
@@ -29,11 +29,18 @@ jest.mock('lodash/debounce', () => fn => {
   return fn
 })
 
-function testProviders ({ withLinkPreview } = {}) {
+function testProviders ({ withLinkPreview, withProposal } = {}) {
   const ormSession = orm.mutableSession(orm.getEmptyState())
   ormSession.Me.create({ id: '1' })
   ormSession.Group.create({ id: '1', name: 'Test Group', slug: 'test-group' })
   const postAttrs = { id: '1', title: 'Test Post', type: 'discussion', groups: [{ id: '1', name: 'Test Group' }], topics: [{ name: 'design' }] }
+  if (withProposal) {
+    ormSession.ProposalOption.create({ id: '101', text: 'First option', color: null, emoji: null })
+    ormSession.ProposalOption.create({ id: '102', text: 'Second option', color: '', emoji: '' })
+    postAttrs.type = 'proposal'
+    postAttrs.groups = ['1']
+    postAttrs.proposalOptions = ['101', '102']
+  }
   if (withLinkPreview) {
     ormSession.LinkPreview.create({
       id: 'lp1',
@@ -166,6 +173,70 @@ describe('PostEditor', () => {
       await waitFor(() => {
         expect(screen.getByText('Example Site')).toBeInTheDocument()
         expect(screen.getByText('example.com')).toBeInTheDocument()
+      })
+    })
+
+    describe('proposal votes', () => {
+      let confirm
+      const warning = 'When options are changed, existing votes will be discarded'
+
+      beforeEach(() => {
+        jest.spyOn(require('react-router-dom'), 'useParams').mockReturnValue({ groupSlug: 'test-group', postId: '1' })
+        confirm = jest.spyOn(window, 'confirm').mockReturnValue(false)
+      })
+
+      afterEach(() => confirm.mockRestore())
+
+      it('saves a title edit without a vote-reset warning or confirmation', async () => {
+        const ref = React.createRef()
+        const onSave = jest.fn()
+        renderComponent({ ...editProps, ref, onSave }, { withProposal: true })
+        fireEvent.change(await screen.findByDisplayValue('Test Post'), { target: { value: 'Clarified title' } })
+
+        expect(screen.queryByText(warning)).not.toBeInTheDocument()
+        await act(async () => ref.current.submit())
+
+        await waitFor(() => expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+          title: 'Clarified title',
+          proposalOptions: [
+            expect.objectContaining({ id: '101', text: 'First option' }),
+            expect.objectContaining({ id: '102', text: 'Second option' })
+          ]
+        })))
+        expect(confirm).not.toHaveBeenCalled()
+      })
+
+      it('requires confirmation before saving a changed option', async () => {
+        const ref = React.createRef()
+        const onSave = jest.fn()
+        renderComponent({ ...editProps, ref, onSave }, { withProposal: true })
+        fireEvent.change(await screen.findByDisplayValue('First option'), { target: { value: 'Different option' } })
+
+        expect(screen.getByText(warning)).toBeInTheDocument()
+        await act(async () => ref.current.submit())
+        expect(confirm).toHaveBeenCalledTimes(1)
+        expect(onSave).not.toHaveBeenCalled()
+
+        confirm.mockReturnValue(true)
+        await act(async () => ref.current.submit())
+        await waitFor(() => expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+          proposalOptions: expect.arrayContaining([expect.objectContaining({ text: 'Different option' })])
+        })))
+      })
+
+      it('removes the warning when the original option text is restored', async () => {
+        const ref = React.createRef()
+        const onSave = jest.fn()
+        renderComponent({ ...editProps, ref, onSave }, { withProposal: true })
+        const option = await screen.findByDisplayValue('First option')
+        fireEvent.change(option, { target: { value: 'Temporary change' } })
+        expect(screen.getByText(warning)).toBeInTheDocument()
+        fireEvent.change(option, { target: { value: 'First option' } })
+        expect(screen.queryByText(warning)).not.toBeInTheDocument()
+
+        await act(async () => ref.current.submit())
+        await waitFor(() => expect(onSave).toHaveBeenCalled())
+        expect(confirm).not.toHaveBeenCalled()
       })
     })
   })
