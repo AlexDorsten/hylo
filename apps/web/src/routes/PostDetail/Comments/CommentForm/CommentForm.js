@@ -52,7 +52,8 @@ const CommentForm = forwardRef(function CommentForm ({
    * the last few characters while the user kept typing. Cache the first resolved HTML per post
    * and only use that for the prop — not live `loadedData` after saves.
    */
-  const commentEditorInitialHtmlRef = useRef({ postId: null, html: null })
+  const commentEditorInitialHtmlRef = useRef({ postId: null, editorContent, html: null })
+  const draftEditedRef = useRef(false)
 
   const [isFocused, setIsFocused] = useState(false)
   const hasUserInteracted = useRef(false)
@@ -74,19 +75,23 @@ const CommentForm = forwardRef(function CommentForm ({
   }, [postId])
 
   const hyloContentHTML = (() => {
+    const initial = commentEditorInitialHtmlRef.current
+    if (initial.postId !== postId || initial.editorContent !== editorContent) {
+      commentEditorInitialHtmlRef.current = { postId, editorContent, html: null }
+      draftEditedRef.current = false
+    }
     if (editorContent) return editorContent
     if (!isLoaded) return ''
-    if (commentEditorInitialHtmlRef.current.postId !== postId) {
-      commentEditorInitialHtmlRef.current = { postId, html: null }
-    }
     if (commentEditorInitialHtmlRef.current.html === null) {
-      commentEditorInitialHtmlRef.current.html = loadedData || ''
+      // The server may respond after typing, clearing or sending. Neither the
+      // content prop nor the imperative hydration below may overwrite that work.
+      commentEditorInitialHtmlRef.current.html = draftEditedRef.current ? draftRef.current : loadedData || ''
     }
     return commentEditorInitialHtmlRef.current.html
   })()
 
   useEffect(() => {
-    if (!isLoaded) return
+    if (!isLoaded || draftEditedRef.current) return
     const draft = editorContent ?? commentEditorInitialHtmlRef.current.html ?? ''
     draftRef.current = draft
     if (editor.current) {
@@ -104,6 +109,7 @@ const CommentForm = forwardRef(function CommentForm ({
       return true
     }
 
+    draftEditedRef.current = true
     editor.current.clearContent()
     startTyping.cancel()
     sendIsTypingAction(false)
@@ -117,6 +123,7 @@ const CommentForm = forwardRef(function CommentForm ({
   }, [attachments, clearAttachmentsAction, clearDraft, createComment, sendIsTypingAction, startTyping])
 
   const handleEditorUpdate = useCallback(async (html) => {
+    draftEditedRef.current = true
     startTyping()
     if (hasDraftContent(html)) {
       commentComposerHadContentRef.current = true
@@ -194,6 +201,7 @@ const CommentForm = forwardRef(function CommentForm ({
       await flushSaveDraft(html, { force: true })
     },
     discardDraft: async () => {
+      draftEditedRef.current = true
       editor.current?.clearContent?.()
       draftRef.current = ''
       commentComposerHadContentRef.current = false
@@ -256,6 +264,7 @@ const CommentForm = forwardRef(function CommentForm ({
               <div className='flex items-center gap-2'>
                 <div>
                   <Button
+                    aria-label={t('Send')}
                     variant='ghost'
                     size='icon'
                     onClick={() => handleSubmit(editor.current.getHTML())}
