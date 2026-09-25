@@ -6,6 +6,7 @@ import { merge, reduce } from 'lodash'
 import setupBridge from '../../lib/graphql-bookshelf-bridge'
 import { presentQuerySet } from '../../lib/graphql-bookshelf-bridge/util'
 import mixpanel from '../../lib/mixpanel'
+import { discussionOverview, discussionHistory, updateDiscussion } from './discussions'
 import {
   saveDraft,
   deleteDraft,
@@ -432,6 +433,8 @@ export function makePublicQueries ({ fetchOne, fetchMany }) {
 // Queries that logged in users can make
 export function makeAuthenticatedQueries ({ fetchOne, fetchMany }) {
   return {
+    discussionOverview: (root, args, context) => discussionOverview(context.currentUserId, args),
+    discussionHistory: (root, args, context) => discussionHistory(context.currentUserId, args),
     activity: (root, { id }) => fetchOne('Activity', id),
     checkContentAccess: (root, args, context) => checkContentAccess(context.currentUserId, args),
     checkInvitation: (root, { invitationToken, accessCode }) =>
@@ -584,6 +587,8 @@ export function makeMutations ({ fetchOne }) {
     // Currently injecting all Public Mutations here so those resolvers remain
     // available between auth'd and non-auth'd sessions
     ...makePublicMutations({ fetchOne }),
+
+    updateDiscussion: (root, args, context) => updateDiscussion(context.currentUserId, args),
 
     acceptGroupRelationshipInvite: (root, { groupRelationshipInviteId }, context) => acceptGroupRelationshipInvite(context.currentUserId, groupRelationshipInviteId, context),
 

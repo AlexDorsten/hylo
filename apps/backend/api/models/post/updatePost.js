@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql'
+import { assertDiscussionPermission } from '../../../lib/discussionAccess'
 import setupPostAttrs from './setupPostAttrs'
 import updateChildren from './updateChildren'
 import { isEqual } from 'lodash'
@@ -15,10 +16,13 @@ export default function updatePost (userId, id, params) {
   const paramsForUpdate = params.imageUrls
     ? { ...params, imageUrls: hostedImageUrls }
     : params
-  return setupPostAttrs(userId, paramsForUpdate)
+  return Post.find(id)
+    .tap(post => assertDiscussionPermission(userId, post, { editing: true }))
+    .then(() => setupPostAttrs(userId, paramsForUpdate))
     .then(attrs => bookshelf.transaction(transacting =>
-      Post.find(id).then(post => {
+      Post.find(id, { transacting }).then(async post => {
         if (!post) throw new GraphQLError('Post not found')
+        await assertDiscussionPermission(userId, post, { editing: true, db: transacting })
         const updatableTypes = [
           Post.Type.ACTION,
           Post.Type.CHAT,
@@ -81,7 +85,7 @@ export function afterUpdatingPost (post, opts) {
     .then(() => Post.afterRelatedMutation(post.id, { changeContext: 'edit' }))
 }
 
-export function getEventChanges({ post, params }) {
+export function getEventChanges ({ post, params }) {
   return {
     start_time: post.get('start_time').getTime() !== params.startTime.getTime() && params.startTime,
     end_time: post.get('end_time').getTime() !== params.endTime.getTime() && params.endTime,

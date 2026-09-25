@@ -1,4 +1,5 @@
 /* global FundingRound ContentAccess Draft GroupView GroupViewUser CollectionPost */
+import { accessibleActivityIds, restrictDiscussionAccess } from '../../lib/discussionAccess'
 import DataLoader from 'dataloader'
 import { camelCase, isNil, mapKeys, startCase } from 'lodash/fp'
 import pluralize from 'pluralize'
@@ -1356,7 +1357,7 @@ export default function makeModels (userId, isAdmin, apiClient) {
       ],
       getters: {
         text: comment => comment.text(userId),
-        parentComment: (c) => c.parentComment().fetch(),
+        parentComment: c => commentFilter(userId)(c.parentComment().where('comments.post_id', c.get('post_id'))).fetch({ columns: ['comments.*'] }),
         myReactions: c => userId ? c.reactionsForUser(userId).fetch() : [],
         commentReactions: c => c.reactions().fetch() // XXX: for some reason this doesn't work as relationship alias, I dont know why
       },
@@ -1686,39 +1687,33 @@ export default function makeModels (userId, isAdmin, apiClient) {
       model: Notification,
       relations: ['activity'],
       getters: {
-        createdAt: n => n.get('created_at')
+        createdAt: n => n.get('created_at'),
+        // Schema-level belongsTo loaders can outlive both content and access.
+        activity: n => Activity.where({ id: n.get('activity_id') })
+          .query(q => q.whereIn('activities.id', accessibleActivityIds(userId))).fetch()
       },
+      filter: relation => relation.query(q => {
+        q.where('notifications.user_id', userId || null)
+        q.whereIn('notifications.activity_id', accessibleActivityIds(userId))
+      }),
       fetchMany: ({ first, order, offset = 0 }) =>
-        Notification.where({
-          medium: Notification.MEDIUM.InApp,
-          'notifications.user_id': userId
-        })
-          .orderBy('id', order)
-      // TODO: fix this filter. Currently it filters out any notification without a comment
-      // filter: (relation) => relation.query(q => {
-      //   q.join('activities', 'activities.id', 'notifications.activity_id')
-      //   q.join('posts', 'posts.id', 'activities.post_id')
-      //   q.join('comments', 'comments.id', 'activities.comment_id')
-      //   q.whereNotIn('activities.actor_id', BlockedUser.blockedFor(userId))
-      //   q.whereNotIn('posts.user_id', BlockedUser.blockedFor(userId))
-      //   q.whereNotIn('comments.user_id', BlockedUser.blockedFor(userId))
-      // })
+        Notification.where({ medium: Notification.MEDIUM.InApp })
+          .orderBy('notifications.id', order)
     },
 
     Activity: {
       model: Activity,
       attributes: ['meta', 'unread'],
-      relations: [
-        'actor',
-        'post',
-        'comment',
-        'fundingRound',
-        'group',
-        'otherGroup',
-        'track'
-      ],
+      relations: ['actor', 'post', 'comment', 'fundingRound', 'group', 'otherGroup', 'track'],
+      filter: relation => relation.query(q => q.whereIn('activities.id', accessibleActivityIds(userId))),
       getters: {
-        action: a => Notification.priorityReason(a.get('meta').reasons)
+        action: a => Notification.priorityReason(a.get('meta').reasons),
+        post: a => a.get('post_id')
+          ? Post.where({ id: a.get('post_id'), active: true }).query(q => restrictDiscussionAccess(q, userId)).fetch()
+          : null,
+        comment: a => a.get('comment_id')
+          ? commentFilter(userId)(Comment.where({ 'comments.id': a.get('comment_id') })).fetch()
+          : null
       }
     },
 

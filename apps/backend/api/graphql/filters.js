@@ -1,24 +1,30 @@
 import DataLoader from 'dataloader'
+import { readableDiscussionIds, restrictDiscussionAccess } from '../../lib/discussionAccess'
 
 export const commentFilter = userId => relation => relation.query(q => {
   q.distinct()
   q.where({ 'comments.active': true })
+  // Anonymous reads need the same post visibility check as authenticated ones.
+  if (!q.queryContext()?.alreadyJoinedPosts) {
+    q.join('posts', 'comments.post_id', 'posts.id')
+  }
+  q.where('posts.active', true)
+  restrictDiscussionAccess(q, userId)
 
   if (userId) {
     q.leftJoin('groups_posts', 'comments.post_id', 'groups_posts.post_id')
-    // Only join posts if not already joined (e.g. by the User.comments relation)
-    if (!q.queryContext()?.alreadyJoinedPosts) {
-      q.join('posts', 'groups_posts.post_id', 'posts.id')
-    }
     q.whereNotIn('comments.user_id', BlockedUser.blockedFor(userId))
 
     q.where(q2 => {
       const followedPostIds = PostUser.followedPostIds(userId)
-      q2.whereIn('comments.post_id', followedPostIds)
+      q2.where(q3 => q3.whereIn('comments.post_id', followedPostIds).where('posts.type', '!=', Post.Type.DISCUSSION))
         .orWhereIn('groups_posts.group_id', Group.selectIdsForMember(userId))
+        .orWhereIn('posts.id', readableDiscussionIds(userId))
         .orWhere('posts.is_public', true)
     })
     q.groupBy('comments.id')
+  } else {
+    q.where('posts.is_public', true)
   }
 })
 
@@ -340,6 +346,7 @@ export const postFilter = (userId, isAdmin) => relation => {
   return relation.query(q => {
     // Always only show active posts
     q.where('posts.active', true)
+    restrictDiscussionAccess(q, userId)
 
     // If we are loading posts through a group then groups_posts already joined, otherwise we need it
     // Also check if we already loaded groups_posts in the forPosts search code
@@ -355,6 +362,7 @@ export const postFilter = (userId, isAdmin) => relation => {
       q.where(q3 => {
         const selectIdsForMember = Group.selectIdsForMember(userId)
         q3.whereIn('groups_posts.group_id', selectIdsForMember).orWhere('posts.is_public', true)
+          .orWhereIn('posts.id', readableDiscussionIds(userId))
       })
 
       // Don't show posts from blocked users

@@ -1,3 +1,4 @@
+import { accessibleActivityIds } from '../../lib/discussionAccess'
 import { isEmpty } from 'lodash'
 import { get, includes } from 'lodash/fp'
 import { refineOne } from './util/relations'
@@ -116,8 +117,8 @@ module.exports = bookshelf.Model.extend({
   },
 
   send: async function () {
-    if (await this.shouldBeBlocked()) {
-      this.destroy()
+    if (!await this.hasCurrentDiscussionAccess() || await this.shouldBeBlocked()) {
+      await this.destroy()
       return
     }
     const userId = this.reader().id
@@ -1308,7 +1309,19 @@ module.exports = bookshelf.Model.extend({
     return Promise.resolve(false)
   },
 
+  // Queue entries and preloaded relations can outlive membership. Resolve the
+  // activity and its discussion sources again at delivery, not at enqueue time.
+  hasCurrentDiscussionAccess: async function (userId) {
+    const activity = await Activity.find(this.get('activity_id'))
+    if (!activity) return false
+    const readerId = activity.get('reader_id')
+    if (!readerId || String(this.get('user_id')) !== String(readerId) || (userId && String(userId) !== String(readerId))) return false
+
+    return !!await accessibleActivityIds(readerId).where('activities.id', activity.id).first()
+  },
+
   updateUserSocketRoom: async function (userId) {
+    if (!await this.hasCurrentDiscussionAccess(userId)) return
     const { activity } = this.relations
     const { actor, comment, group, otherGroup, post, track, fundingRound } = activity.relations
     const action = Notification.priorityReason(activity.get('meta').reasons)

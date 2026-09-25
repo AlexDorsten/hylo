@@ -8,6 +8,11 @@ Thanks for checking out our code. The documentation below may be incomplete or i
 
 ## Quick Start
 
+For this fork's planned self-hosted community features, see the
+[community roadmap](docs/community/roadmap.md) and the
+[systemic consensus specification](docs/community/systemic-consensus.md).
+These documents distinguish implementation work from proposed capabilities.
+
 1. Install and use nvm to install the correct version of node. You can just do `nvm install` to ensure the correct version is installed and then `nvm use`
 
 2. Install yarn and foreman

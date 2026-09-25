@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql'
+import { assertDiscussionPermission } from '../../../lib/discussionAccess'
 
 const FULFILLABLE_TYPES = ['offer', 'request', 'resource', 'project', 'proposal']
 
@@ -33,6 +34,7 @@ export async function canFulfillPostAsModerator (userId, post) {
 /** Throws when the user cannot fulfill or unfulfill this post. */
 export async function assertCanFulfillPost (userId, post) {
   if (!post) throw new GraphQLError('Post does not exist')
+  await assertDiscussionPermission(userId, post, { editing: true })
   if (post.get('user_id') === userId) return
   if (await canFulfillPostAsModerator(userId, post)) return
   throw new GraphQLError("You don't have permission to modify this post")

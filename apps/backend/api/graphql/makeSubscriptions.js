@@ -1,5 +1,6 @@
 import { pipe } from 'graphql-yoga'
 import { get } from 'lodash/fp'
+import { subscriptionPostId, requireSubscriptionAccess, withPostAccess, withNotificationAccess } from './subscriptionAccess'
 
 /**
  * Filters out subscription events where the current user is the creator.
@@ -29,28 +30,38 @@ const withDontSendToCreator = ({ context, getter } = {}) => {
 export default function makeSubscriptions () {
   return {
     comments: {
-      subscribe: (parent, { id, postId, commentId }, context) => pipe(
-        context.pubSub.subscribe(
-          commentId ? `comments:commentId:${commentId}` : `comments:postId:${postId}`
-        ),
-        withDontSendToCreator({ context })
-      ),
+      subscribe: async (parent, { postId, commentId }, context) => {
+        const targetId = await subscriptionPostId(commentId ? { commentId } : { postId })
+        await requireSubscriptionAccess(context, targetId)
+        return pipe(
+          context.pubSub.subscribe(
+            commentId ? `comments:commentId:${commentId}` : `comments:postId:${postId}`
+          ),
+          withPostAccess({ context, postId: targetId }),
+          withDontSendToCreator({ context })
+        )
+      },
       resolve: (payload) => {
         return new Comment(payload.comment)
       }
     },
 
     peopleTyping: {
-      subscribe: (parent, { messageThreadId, postId, commentId }, context) => pipe(
-        context.pubSub.subscribe(
-          messageThreadId
-            ? `peopleTyping:messageThreadId:${messageThreadId}`
-            : postId
-              ? `peopleTyping:postId:${postId}`
-              : `peopleTyping:commentId:${commentId}`
-        ),
-        withDontSendToCreator({ context, getter: get('user.id') })
-      ),
+      subscribe: async (parent, { messageThreadId, postId, commentId }, context) => {
+        const targetId = await subscriptionPostId({ messageThreadId, postId, commentId })
+        await requireSubscriptionAccess(context, targetId)
+        return pipe(
+          context.pubSub.subscribe(
+            messageThreadId
+              ? `peopleTyping:messageThreadId:${messageThreadId}`
+              : postId
+                ? `peopleTyping:postId:${postId}`
+                : `peopleTyping:commentId:${commentId}`
+          ),
+          withPostAccess({ context, postId: targetId }),
+          withDontSendToCreator({ context, getter: get('user.id') })
+        )
+      },
       resolve: (payload) => {
         return User.find(payload.user.id)
       }
@@ -59,6 +70,7 @@ export default function makeSubscriptions () {
     updates: {
       subscribe: (parent, args, context) => pipe(
         context.pubSub.subscribe(`updates:${context.currentUserId}`),
+        withNotificationAccess({ context }),
         withDontSendToCreator({ context })
       ),
       resolve: (payload) => {
@@ -128,6 +140,7 @@ export default function makeSubscriptions () {
     postUpdates: {
       subscribe: (parent, args, context) => pipe(
         context.pubSub.subscribe(`postUpdates:${context.currentUserId}`),
+        withPostAccess({ context }),
         withDontSendToCreator({ context })
       ),
       resolve: (payload) => {
@@ -159,11 +172,11 @@ export default function makeSubscriptions () {
 
         // Create individual subscription iterators
         const subscriptions = [
-          pipe(context.pubSub.subscribe(`updates:${userId}`), withDontSendToCreator({ context })),
+          pipe(context.pubSub.subscribe(`updates:${userId}`), withNotificationAccess({ context }), withDontSendToCreator({ context })),
           pipe(context.pubSub.subscribe(`groupUpdates:${userId}`), withDontSendToCreator({ context })),
           pipe(context.pubSub.subscribe(`groupMembershipUpdates:${userId}`), withDontSendToCreator({ context })),
           pipe(context.pubSub.subscribe(`groupRelationshipUpdates:${userId}`), withDontSendToCreator({ context })),
-          pipe(context.pubSub.subscribe(`postUpdates:${userId}`), withDontSendToCreator({ context }))
+          pipe(context.pubSub.subscribe(`postUpdates:${userId}`), withPostAccess({ context }), withDontSendToCreator({ context }))
         ]
 
         // Merge all subscription streams with proper cleanup
