@@ -105,8 +105,12 @@ const upsertUser = (req, service, profile, { tokenAuth = false } = {}) => {
   })
 }
 
-const upsertLinkedAccount = (req, service, profile) => {
+const upsertLinkedAccount = async (req, service, profile) => {
   var userId = req.session.userId
+  // Verified signup stubs already have a session, but no completed credential.
+  if (!registrationEnabled(process.env) && !(await LinkedAccount.where({ user_id: userId }).fetch())) {
+    throw new Error('REGISTRATION_DISABLED')
+  }
   return LinkedAccount.where({provider_key: service, provider_user_id: profile.id}).fetch()
   .then(account => {
     if (account) {

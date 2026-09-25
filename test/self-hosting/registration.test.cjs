@@ -108,3 +108,45 @@ for (const native of [false, true]) {
     })
   }
 }
+
+for (const completed of [false, true]) {
+  test(`closed registration guards social linking from a ${completed ? 'completed' : 'pending'} session`, async () => {
+    const calls = []
+    const controller = loadBackend('api/controllers/SessionController.js', {
+      env: disabled,
+      mocks: {
+        passport: { authenticate: (_, callback) => () => callback(null, { id: 'external', email: 'member@example.org' }) },
+        'apple-signin-auth': {},
+        '@hylo/shared': {},
+        '../services/oidc/KnexAdapter': {},
+        '../services/OIDCTokens': {},
+        '../../lib/sentry': { error () {} }
+      },
+      globals: {
+        UserSession: { isLoggedIn: () => true },
+        LinkedAccount: {
+          where: query => ({
+            fetch: async () => {
+              if (query.user_id) return completed ? { id: 'existing-credential' } : undefined
+              assert.ok(completed, 'Pending sessions must stop before provider lookup')
+              return { get: () => '42' }
+            }
+          }),
+          updateUser: async () => calls.push('update'),
+          create: () => assert.fail('No new credential')
+        },
+        UserExternalData: { store: async () => calls.push('profile') }
+      }
+    })
+    const req = { headers: { accept: 'application/json' }, session: { userId: '42' }, get: () => undefined }
+    const res = { ok () { this.success = true }, serverError (error) { this.error = error.message } }
+    await controller.finishGoogleOAuth(req, res)
+    if (completed) {
+      assert.equal(res.success, true)
+      assert.deepEqual(calls, ['update', 'profile'])
+    } else {
+      assert.equal(res.error, 'REGISTRATION_DISABLED')
+      assert.deepEqual(calls, [])
+    }
+  })
+}
