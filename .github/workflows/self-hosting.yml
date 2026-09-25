@@ -1,0 +1,69 @@
+name: Docker self-hosting foundation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/docker-self-hosting']
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'deploy/docker/**'
+      - 'test/self-hosting/**'
+      - 'apps/backend/**'
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'yarn.lock'
+      - '.dockerignore'
+      - '.github/workflows/self-hosting.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: self-hosting-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image-and-bootstrap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: deploy/docker
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5.0.1
+      - name: Prepare isolated test configuration
+        run: |
+          cp .env.example .env
+          cp backend.env.example backend.env
+          python3 - <<'PY'
+          import pathlib, secrets
+          file = pathlib.Path('.env')
+          content = file.read_text()
+          for name in ('POSTGRES_PASSWORD', 'APP_DB_PASSWORD', 'COOKIE_SECRET', 'JWT_SECRET'):
+              content = content.replace(name + '=\n', name + '=' + secrets.token_hex(32) + '\n')
+          file.write_text(content)
+          PY
+          docker compose --profile application --profile maintenance config --quiet
+      - name: Build image and run configuration regression tests
+        run: docker compose build api
+      - name: Bootstrap fresh database as application role
+        run: |
+          docker compose up -d --wait db redis
+          docker compose run --rm --no-deps maintenance node /app/deploy/docker/bootstrap.cjs
+      - name: Verify seeded data, application privileges and reinitialization guard
+        run: |
+          test "$(docker compose exec -T db psql -U postgres -d hylo -Atc "SELECT rolsuper FROM pg_roles WHERE rolname = 'hylo'")" = f
+          test "$(docker compose exec -T db psql -U postgres -d hylo -Atc 'SELECT count(*) FROM users')" -gt 0
+          test "$(docker compose exec -T db psql -U postgres -d hylo -Atc 'SELECT count(*) FROM knex_migrations')" -gt 0
+          if docker compose run --rm --no-deps maintenance node /app/deploy/docker/bootstrap.cjs > /tmp/bootstrap-retry.log 2>&1; then
+            echo 'ERROR: repeated bootstrap unexpectedly succeeded'
+            exit 1
+          fi
+          grep -q 'Refusing bootstrap: application relations already exist' /tmp/bootstrap-retry.log
+      - name: Verify update command after initial installation
+        run: docker compose run --rm --no-deps maintenance
+      - name: Tear down disposable CI data
+        if: always()
+        run: docker compose --profile application --profile maintenance down -v

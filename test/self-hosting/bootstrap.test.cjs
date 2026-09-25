@@ -1,0 +1,15 @@
+const assert = require('node:assert/strict')
+const { test } = require('node:test')
+const { readFileSync } = require('node:fs')
+const path = require('node:path')
+const { applicationSchema } = require('../../deploy/docker/bootstrap.cjs')
+
+test('the repository schema can be loaded by an application role with preinstalled extensions', () => {
+  const source = readFileSync(path.resolve(__dirname, '../../apps/backend/migrations/schema.sql'), 'utf8')
+  const sql = applicationSchema(source)
+  assert.doesNotMatch(sql, /^CREATE EXTENSION|^COMMENT ON EXTENSION|^\\/m)
+  assert.match(sql, /CREATE TABLE public.users/)
+  assert.match(sql, /CREATE FUNCTION public\./)
+  assert.throws(() => applicationSchema(source + '\nCREATE EXTENSION example;\n'), /declarations changed/)
+  assert.throws(() => applicationSchema(source.replace('WITH SCHEMA public;', 'WITH SCHEMA other;')), /declarations changed/)
+})
