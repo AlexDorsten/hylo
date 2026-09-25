@@ -158,7 +158,7 @@ jobs:
           DOMAIN: localhost:3000
         run: |
           createdb --maintenance-db=postgresql://postgres:postgres@localhost:5432/postgres test_hylo_proposals
-          yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js test/unit/graphql/Discussions.test.js test/unit/graphql/DiscussionAccess.test.js --timeout 10000
+          yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js test/unit/graphql/Discussions.test.js test/unit/graphql/DiscussionAccess.test.js test/unit/graphql/DiscussionDelivery.test.js --timeout 10000
 
       - name: Run Playwright E2E (isolated DB + API + web)
         working-directory: apps/web

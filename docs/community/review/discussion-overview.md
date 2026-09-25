@@ -48,11 +48,25 @@ than treating the requested scope as permission. GraphQL comment and typing
 subscriptions check access before opening a channel and again for each event;
 post events on `postUpdates` and `allUpdates` also recheck current access.
 
-The broader #14 access criterion remains open. Legacy Socket.IO rooms and their
-existing subscribers, notifications, remaining mutations and inherited-moderator
-policy alignment still need review. The GraphQL SSE checks do not protect those
-separate channels. Passing the covered endpoint tests is not evidence that every
-existing Hylo content channel meets the release criteria.
+Private discussion comments and typing events on legacy Socket.IO now target
+personal post rooms belonging to current active members. Room membership is no
+longer the access grant: each send reloads post visibility and current recipients.
+This covers retained rooms, inactive users/groups/posts, and a public discussion
+becoming private. Membership in another active linked group still grants access.
+Typing mutations check access before publishing, including comment-thread typing.
+
+Queued email, push and in-app discussion notifications reload their activity and
+source access at delivery. Direct in-app delivery and notification events on
+`updates`/`allUpdates` also check current access. Comment digests exclude inactive
+comments and recheck each recipient before sending; a retained follow is
+insufficient for a private discussion. Empty digest batches return a numeric zero.
+
+The broader #14 access criterion remains open. Persisted notification queries and
+their nested activity relations, general group Socket.IO channels (including
+`newPost`), remaining mutations and inherited-moderator policy alignment still
+need review. The covered delivery checks do not protect those separate paths.
+Passing these tests is not evidence that every existing Hylo content channel meets
+the release criteria.
 Native mobile clients, full assistive-technology testing and production integration
 are also not claimed by this change.
 
@@ -65,7 +79,7 @@ creates and drops that database. Never point it at a populated installation.
 With the repository's test PostgreSQL/PostGIS, Redis, Node 24 and Yarn 4 setup:
 
 ```sh
-yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js test/unit/graphql/Discussions.test.js test/unit/graphql/DiscussionAccess.test.js --timeout 10000
+yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js test/unit/graphql/Discussions.test.js test/unit/graphql/DiscussionAccess.test.js test/unit/graphql/DiscussionDelivery.test.js --timeout 10000
 yarn workspace web test --watchAll=false --runInBand --runTestsByPath src/components/PostEditor/PostEditor.test.js src/components/DiscussionOverview/DiscussionOverview.test.js src/routes/PostDetail/PostDetail.test.js src/routes/PostDetail/Comments/CommentForm/CommentForm.test.js
 yarn workspace web test:e2e:isolated authenticated.discussion-overview.spec.js --project=chromium --project=mobile-chrome
 yarn workspace web build
@@ -78,11 +92,23 @@ Access regression tests exercise the actual GraphQL schema and full-text index,
 retained follows, scoped search, cross-post parent links and subscription streams
 before and after membership revocation. Public discussions and private message
 participants have positive regression coverage too.
-The focused CI selection passes 32 tests. An additional 36 existing post-visibility,
-search, message-search and inbound-comment tests passed, with one pre-existing
-search skip. That legacy selection required Mocha's synchronous CommonJS loader;
-its default ESM import path conflicts with `mock-require` on the tested Node 24
-runtime. No test-runner dependency change is included here.
+Delivery regression tests additionally exercise real Socket.IO clients, the Sails
+room helpers and Redis worker emitter, using ordered event barriers instead of
+sleep-based absence checks. Database-backed cases cover queued notifications,
+live notification streams, comment digests and positive delivery to current
+members/public readers. Transport testing also reproduced an existing worker
+shutdown error: the emitter's Redis client has a callback-based `quit`, not a
+Promise-based API; cleanup now uses that API.
+
+The focused CI selection passes 54 tests, including 22 delivery cases. Another
+38 existing notification, comment digest and inbound-post tests pass locally. The
+notification fixture now creates an active comment, as production comment creation
+does.
+Legacy CommonJS tests require Mocha's synchronous loader because its default ESM
+import path conflicts with `mock-require` on the tested Node 24 runtime. No
+test-runner dependency change is included here. The preceding access increment
+also passed 36 adjacent visibility/search/inbound-comment tests with one existing
+search skip.
 Component tests cover rendering, editing, conflicts, request failures, history and
 revocation, as well as late comment-draft restoration, without replacing the
 server-side permission tests.
@@ -94,6 +120,8 @@ failures and avoids sharing one timeout across all three workflows. All six
 desktop/mobile scenarios plus auth setup passed locally with eight configured
 workers; that does not replace the full CI suite. Secondary participant contexts
 use the project's mobile user agent and touch settings as well as viewport size.
+The full GitHub workflow for the preceding revision `71950a030` passed; the new
+delivery suite is added to that workflow and needs its own successful run.
 Screenshots below use
 the actual device width and a taller capture viewport to show the entire panel.
 
@@ -117,7 +145,11 @@ Before a production rollout:
    author/member/moderator access and history with representative data.
 3. Apply the migration before serving the new API and web bundle. Run the focused
    checks and the complete CI suite on that exact integrated revision.
-4. Verify backup/restore includes discussion history. For application rollback,
+4. Restart every API and worker process together so no old publisher keeps sending
+   private discussion events to shared rooms. Existing clients must reconnect and
+   rejoin both shared and personal post rooms. A mixed-version rollout does not
+   provide the new delivery boundary.
+5. Verify backup/restore includes discussion history. For application rollback,
    retain the additive table. Running the migration's `down` drops all saved
    overview revisions and is not a nondestructive rollback.
 

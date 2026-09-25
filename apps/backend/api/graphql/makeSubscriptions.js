@@ -1,6 +1,6 @@
 import { pipe } from 'graphql-yoga'
 import { get } from 'lodash/fp'
-import { subscriptionPostId, requireSubscriptionAccess, withPostAccess } from './subscriptionAccess'
+import { subscriptionPostId, requireSubscriptionAccess, withPostAccess, withNotificationAccess } from './subscriptionAccess'
 
 /**
  * Filters out subscription events where the current user is the creator.
@@ -70,6 +70,7 @@ export default function makeSubscriptions () {
     updates: {
       subscribe: (parent, args, context) => pipe(
         context.pubSub.subscribe(`updates:${context.currentUserId}`),
+        withNotificationAccess({ context }),
         withDontSendToCreator({ context })
       ),
       resolve: (payload) => {
@@ -171,7 +172,7 @@ export default function makeSubscriptions () {
 
         // Create individual subscription iterators
         const subscriptions = [
-          pipe(context.pubSub.subscribe(`updates:${userId}`), withDontSendToCreator({ context })),
+          pipe(context.pubSub.subscribe(`updates:${userId}`), withNotificationAccess({ context }), withDontSendToCreator({ context })),
           pipe(context.pubSub.subscribe(`groupUpdates:${userId}`), withDontSendToCreator({ context })),
           pipe(context.pubSub.subscribe(`groupMembershipUpdates:${userId}`), withDontSendToCreator({ context })),
           pipe(context.pubSub.subscribe(`groupRelationshipUpdates:${userId}`), withDontSendToCreator({ context })),

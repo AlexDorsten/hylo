@@ -23,3 +23,16 @@ export const withPostAccess = ({ context, postId }) => async function * (events)
     if (await Post.isVisibleToUser(targetId, context.currentUserId)) yield payload
   }
 }
+
+// Notification events can already be queued when membership changes. Resolve
+// the persisted notification so an old event does not carry an old access grant.
+export const withNotificationAccess = ({ context }) => async function * (events) {
+  for await (const payload of events) {
+    if (payload.notification) {
+      if (!context.currentUserId) continue
+      const notification = await Notification.find(value(payload.notification, 'id'))
+      if (!notification || !await notification.hasCurrentDiscussionAccess(context.currentUserId)) continue
+    }
+    yield payload
+  }
+}

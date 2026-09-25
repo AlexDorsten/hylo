@@ -116,8 +116,8 @@ module.exports = bookshelf.Model.extend({
   },
 
   send: async function () {
-    if (await this.shouldBeBlocked()) {
-      this.destroy()
+    if (!await this.hasCurrentDiscussionAccess() || await this.shouldBeBlocked()) {
+      await this.destroy()
       return
     }
     const userId = this.reader().id
@@ -1308,7 +1308,31 @@ module.exports = bookshelf.Model.extend({
     return Promise.resolve(false)
   },
 
+  // Queue entries and preloaded relations can outlive membership. Resolve the
+  // activity and its discussion sources again at delivery, not at enqueue time.
+  hasCurrentDiscussionAccess: async function (userId) {
+    const activity = await Activity.find(this.get('activity_id'))
+    if (!activity) return false
+    const readerId = activity.get('reader_id')
+    if (!readerId || (userId && String(userId) !== String(readerId))) return false
+
+    const postIds = new Set()
+    if (activity.get('post_id')) postIds.add(activity.get('post_id'))
+    if (activity.get('comment_id')) {
+      const comment = await Comment.find(activity.get('comment_id'))
+      if (!comment?.get('active')) return false
+      postIds.add(comment.get('post_id'))
+    }
+    for (const postId of postIds) {
+      const post = await Post.find(postId)
+      if (!post) return false
+      if (post.get('type') === Post.Type.DISCUSSION && !await Post.isVisibleToUser(postId, readerId)) return false
+    }
+    return true
+  },
+
   updateUserSocketRoom: async function (userId) {
+    if (!await this.hasCurrentDiscussionAccess(userId)) return
     const { activity } = this.relations
     const { actor, comment, group, otherGroup, post, track, fundingRound } = activity.relations
     const action = Notification.priorityReason(activity.get('meta').reasons)
