@@ -26,3 +26,15 @@ request payment data. The same check passed with HTTP 503 from that endpoint:
 zero payment queries and the unavailable message remained visible. Optional
 cookies were declined and external network requests were blocked. This is UI
 evidence, not a successful checkout or a full community-flow acceptance test.
+
+## Password recovery
+
+`password-recovery-form.png` and `password-recovery-success.png` show the German
+standalone recovery page in local Chrome. The fixture loads the actual HTTP
+controller and recovery service against isolated PostgreSQL and Redis, with an
+invented verified account. Mail delivery is captured locally. The browser URL
+has no token after loading, mismatched confirmation is rejected, and successful
+submission hides and clears the form without logging in. The stored bcrypt
+credential accepts the new password and rejects the old one after submission.
+No real mail, user account, provider or operator configuration is used. These
+screenshots do not establish deployment or external-inbox acceptance.

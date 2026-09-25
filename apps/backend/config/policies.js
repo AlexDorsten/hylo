@@ -22,6 +22,7 @@ module.exports.policies = {
   '*': false,
 
   InstanceController: { capabilities: true },
+  PasswordRecoveryController: { show: true, complete: true },
 
   AdminController: {
     stripeAnalytics: ['isAdmin', 'paymentsEnabled'],

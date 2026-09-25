@@ -2,21 +2,23 @@
 const copy = {
   en: {
     'email-verification': ['Verify your email address', 'Confirm your email address to continue.', 'Verify email'],
-    'password-reset': ['Reset your password', 'Use the link below to sign in and choose a new password.', 'Reset password'],
+    'password-reset': ['Reset your password', 'Use the link below to choose a new password.', 'Reset password'],
     'finish-registration': ['Complete your registration', 'Confirm your email address to complete registration.', 'Complete registration'],
     invitation: ['You have been invited', 'You have been invited to join', 'Open invitation'],
     code: 'Verification code',
     ignore: 'If you did not request this email, you can ignore it.',
-    expiry: 'This link expires after four hours.'
+    expiry: 'This link expires after four hours.',
+    recoveryExpiry: 'This link works once and expires after 30 minutes.'
   },
   de: {
     'email-verification': ['E-Mail-Adresse bestätigen', 'Bestätige deine E-Mail-Adresse, um fortzufahren.', 'E-Mail bestätigen'],
-    'password-reset': ['Passwort zurücksetzen', 'Über den Link kannst du dich anmelden und ein neues Passwort wählen.', 'Passwort zurücksetzen'],
+    'password-reset': ['Passwort zurücksetzen', 'Über den Link kannst du ein neues Passwort wählen.', 'Passwort zurücksetzen'],
     'finish-registration': ['Registrierung abschließen', 'Bestätige deine E-Mail-Adresse, um die Registrierung abzuschließen.', 'Registrierung abschließen'],
     invitation: ['Du wurdest eingeladen', 'Du wurdest eingeladen, dieser Gruppe beizutreten:', 'Einladung öffnen'],
     code: 'Bestätigungscode',
     ignore: 'Wenn du diese E-Mail nicht angefordert hast, kannst du sie ignorieren.',
-    expiry: 'Dieser Link läuft nach vier Stunden ab.'
+    expiry: 'Dieser Link läuft nach vier Stunden ab.',
+    recoveryExpiry: 'Dieser Link funktioniert einmal und läuft nach 30 Minuten ab.'
   }
 }
 
@@ -43,7 +45,7 @@ function renderAccount (template, data, locale, origin) {
       if (!/^\d{1,6}$/.test(String(data.code))) throw new Error('EMAIL_TEMPLATE_INVALID')
       paragraphs.push(`${strings.code}: ${data.code}`)
     }
-    paragraphs.push(strings.expiry)
+    paragraphs.push(template === 'password-reset' ? strings.recoveryExpiry : strings.expiry)
   }
   paragraphs.push(strings.ignore)
   return {

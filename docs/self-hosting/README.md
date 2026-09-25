@@ -4,8 +4,9 @@ This fork is preparing a portable Docker installation of Hylo. The foundation
 builds a shared application image, provisions private data services and provides
 a guarded first-install command. **It is not yet a complete production-ready
 self-hosting release.** Payments can now be disabled without Stripe credentials, and SMTP supports
-the four account-lifecycle templates. Direct uploads, notification templates,
-recovery-token hardening and full operational acceptance are still outstanding. The application profile is deliberately opt-in while those issues
+the four account-lifecycle templates, including dedicated single-use password
+recovery. Direct uploads, notification templates and full operational acceptance
+are still outstanding. The application profile is deliberately opt-in while those issues
 are resolved. No placeholder provider credentials are supplied.
 
 All examples use `hylo.example.org`. Keep real deployment details and filled
@@ -264,10 +265,11 @@ image, runs focused configuration/HTTP tests, imports schema and seeds as the
 non-superuser role, rejects a second bootstrap and exercises migrations.
 It also tests external OIDC with signed two-issuer fixtures, PostgreSQL identity
 ownership/migration equivalence and atomic Redis callbacks. It also exercises the operator lookup against PostgreSQL, the API/worker and
-all three schedule entry points without Stripe keys, and real account-email
+all three schedule entry points without Stripe keys, password-recovery expiry,
+replay, concurrent redemption and stored-session revocation, and real account-email
 delivery to a local SMTP sink, including a failure followed by a retry. It uses
 disposable CI-generated secrets and no provider accounts. These checks do not
-establish full registration/recovery, independent-provider, external mail
+establish complete pilot registration/recovery, independent-provider, external mail
 deliverability, upload or restore acceptance.
 Check the workflow result for the exact revision before using the artifacts.
 

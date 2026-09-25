@@ -114,23 +114,9 @@ export const logout = async (root, args, context) => {
 
 // Other User resolvers
 
-export const sendPasswordReset = async (_, { email }) => {
+export const sendPasswordReset = async (_, { email }, context) => {
   try {
-    const user = await User.query(q => q.whereRaw('lower(email) = ?', email.toLowerCase())).fetch()
-
-    if (user) {
-      const nextUrl = Frontend.Route.evo.passwordSetting()
-      const token = user.generateJWT()
-
-      await Queue.classMethod('Email', 'sendPasswordReset', {
-        email: user.get('email'),
-        locale: user.getLocale(),
-        templateData: {
-          login_url: Frontend.Route.jwtLogin(user, token, nextUrl)
-        }
-      })
-    }
-
+    await PasswordRecovery.request({ email, ip: context?.req?.ip })
     return { success: true }
   } catch (error) {
     return { success: false }

@@ -36,7 +36,7 @@ module.exports.http = {
 
     requestLogger: function (req, res, next) {
       // Authorization codes and state must not be written to access logs.
-      const loggedUrl = req.path.startsWith('/noo/login/oidc/') ? req.path : req.url
+      const loggedUrl = req.path.startsWith('/noo/login/oidc/') || req.path === '/noo/password-reset' ? req.path : req.url
       sails.log.info(magenta(`${req.method} ${loggedUrl}`))
       next()
     },

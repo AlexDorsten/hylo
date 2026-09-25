@@ -263,6 +263,7 @@
       "UserExternalData",
       "UserScope",
       "UserSession",
+      "PasswordRecovery",
       "UserVerificationCode",
       "Validation",
       "ZapierTrigger",

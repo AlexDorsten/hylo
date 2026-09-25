@@ -43,6 +43,7 @@ recreate the processes; the lookup never changes permissions itself.
 The automated PostgreSQL test covers lookup eligibility, ambiguous addresses,
 large IDs and lack of permission writes. End-to-end registration, ordinary-user
 denial and administrator access through the actual pilot remain required before
-closing issue #3. Password-reset links still use the upstream reusable four-hour
-login token; one-time, purpose-bound recovery remains a public-release blocker
-tracked in #4. This procedure does not establish production readiness.
+closing issue #3. New password-reset links use the dedicated single-use flow
+described in [SMTP account delivery](SMTP.md#password-recovery). Verify recovery
+through the actual pilot's inbox and browser before accepting issue #4. This
+procedure does not establish production readiness.

@@ -81,7 +81,7 @@ if (auth.linkedin) {
   passport.use(linkedinTokenStrategy)
 }
 
-//**** JWT login for email verification, password reset... ****//
+//**** Legacy JWT login (password recovery uses separate opaque tokens). ****//
 import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt'
 
 let opts = {}
@@ -92,7 +92,7 @@ opts.issuer = process.env.PROTOCOL + '://' + process.env.DOMAIN
 opts.audience = process.env.PROTOCOL + '://' + process.env.DOMAIN
 opts.algorithms = ['RS256']
 opts.jsonWebTokenOptions = {
-  // 4 hours because right now we only use these tokens for password reset and email verification and want to quickly invalidate, could even be quicker
+  // Keep legacy email/registration links compatible; new recovery never uses JWTs.
   maxAge: '4h'
 }
 passport.use(new JwtStrategy(opts, (jwt_payload, done) => {

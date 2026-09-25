@@ -72,6 +72,8 @@ jobs:
         run: docker compose run --rm --no-deps -e HYLO_SELF_HOSTING_INTEGRATION=1 maintenance node --test /app/test/self-hosting/oidc-storage.integration.cjs
       - name: Verify first-operator lookup against PostgreSQL
         run: docker compose run --rm --no-deps -e HYLO_SELF_HOSTING_INTEGRATION=1 maintenance node --test /app/test/self-hosting/operator.integration.cjs
+      - name: Verify password recovery expiry, replay, concurrency and session revocation
+        run: docker compose run --rm --no-deps -e HYLO_SELF_HOSTING_INTEGRATION=1 maintenance node --test /app/test/self-hosting/password-recovery.integration.cjs
       - name: Verify update command after initial installation
         run: docker compose run --rm --no-deps maintenance
       - name: Start API and worker without Stripe credentials

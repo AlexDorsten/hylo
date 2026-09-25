@@ -15,6 +15,14 @@ async function main () {
     await delay(2000)
   }
   assert.deepEqual(capabilities, { payments: false }, 'API must become ready with disabled payments')
+  const recovery = await fetch(origin + '/noo/password-reset', { headers: { 'Accept-Language': 'de' } })
+  assert.equal(recovery.status, 200)
+  assert.equal(recovery.headers.get('cache-control'), 'no-store')
+  assert.equal(recovery.headers.get('referrer-policy'), 'no-referrer')
+  assert.match(recovery.headers.get('content-security-policy'), /frame-ancestors 'none'/)
+  assert.match(await recovery.text(), /Neues Passwort wählen/)
+  const crossOrigin = await fetch(origin + '/noo/password-reset', { method: 'POST', headers: { Origin: 'https://other.example.org', 'Content-Type': 'application/json' }, body: '{}' })
+  assert.equal(crossOrigin.status, 403)
   const payment = await fetch(origin + '/noo/stripe/health')
   assert.equal(payment.status, 503)
   assert.deepEqual(await payment.json(), { error: 'PAYMENTS_DISABLED' })
@@ -30,7 +38,7 @@ async function main () {
   assert.equal(result.errors.length, 1)
   assert.equal(result.errors[0].message, 'Payments are disabled on this instance')
   assert.equal(result.errors[0].extensions.code, 'PAYMENTS_DISABLED')
-  console.log('API, capabilities, non-payment GraphQL and payment rejection passed without Stripe credentials')
+  console.log('API, recovery routes, capabilities, non-payment GraphQL and payment rejection passed without Stripe credentials')
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1 })

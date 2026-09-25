@@ -64,7 +64,7 @@ test('local account templates escape content, preserve origin and fall back to E
   for (const inviteLink of ['javascript:alert(1)', 'https://evil.example.org/invite', 'https://user:pass@hylo.example.org/invite', undefined]) assert.throws(() => renderAccount('invitation', { ...data, invite_link: inviteLink }, 'en', 'https://hylo.example.org'))
   for (const [template, key] of [['email-verification', 'verify_url'], ['password-reset', 'login_url'], ['finish-registration', 'verify_url']]) {
     const content = renderAccount(template, { code: '012345', [key]: 'https://hylo.example.org/verify?token=private' }, 'en', 'https://hylo.example.org')
-    assert.match(content.text, /four hours/)
+    assert.match(content.text, template === 'password-reset' ? /once.*30 minutes/ : /four hours/)
     assert.match(content.html, /https:\/\/hylo.example.org/)
   }
 })

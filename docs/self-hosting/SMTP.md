@@ -52,7 +52,7 @@ The versioned templates in `apps/backend/lib/email/templates/account.cjs` cover:
 | --- | --- |
 | Signup verification | Verification URL and code |
 | Finish registration | Verification URL for the stored verification code |
-| Password recovery | Existing Hylo login/recovery URL |
+| Password recovery | Dedicated single-use password-change URL, valid for 30 minutes |
 | Group invitation | Existing invitation URL and optional inviter/message |
 
 Templates include text and HTML, escape variables, restrict action links to the
@@ -87,6 +87,45 @@ configure SMTP and restart the API/worker. Verify all four account messages with
 synthetic accounts before migrating a real community. Do not switch a community
 that depends on digest/export email until the remaining templates are available.
 
+## Password recovery
+
+The existing “forgot password” form queues an account lookup and always returns
+the same success response for unknown, ineligible and throttled addresses. Only
+active, email-verified accounts receive a link. A verified social-only account
+can also establish its first local password. Requests are limited to three per
+address and ten per source IP in 15 minutes; completion attempts are limited to
+30 per source IP in 15 minutes. The reverse proxy must replace untrusted forwarded
+headers, and the API port must remain private, for IP limits to be meaningful.
+
+The worker generates a cryptographically random 256-bit token. Redis stores its
+SHA-256 digest and recovery metadata for 30 minutes. Mail delivery happens in the
+worker; the job contains the address, never the raw reset token or password.
+Failed delivery revokes that token and reports a sanitized error for retry.
+The URL uses a fragment (`/noo/password-reset#…`), so normal HTTP/proxy access
+logs do not receive the token. The page clears the fragment immediately and
+uses no third-party resources, a restrictive CSP, `no-store` and `no-referrer`.
+Opening a link does not consume it, which also protects against mail scanners.
+
+The German/English completion page asks for the new password twice. It preserves
+Hylo's minimum length and rejects passwords above bcrypt's 72-byte UTF-8 limit.
+It sends JSON only to the configured same-origin endpoint. Redis atomically
+claims the token; PostgreSQL locks the account and credential before changing
+the password. A changed email, changed password, unverified/inactive account,
+expired token or replay fails. Multiple outstanding links are bound to the old
+credential; only one concurrent change can succeed. An infrastructure failure
+after claiming a link requires a new link and rolls back the password change.
+
+Recovery removes stored browser sessions, including old anonymous-key sessions,
+and database-backed OIDC grants/tokens for that user. It does not sign the user
+in: the user returns to regular login. It does not terminate already executing
+requests or revoke the independent identity provider's sessions. Older stateless
+Hylo login JWTs, including reset links sent **before this upgrade**, retain their
+original expiry (up to four hours). Plan that transition window when upgrading
+an existing instance; restarting API/worker alone does not revoke those JWTs.
+Existing hosted mail templates may need their expiry/login wording updated.
+
+Design reference: [OWASP Forgot Password Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html).
+
 ## Verification and release limits
 
 `node --test test/self-hosting/email.test.cjs` uses a disposable local SMTP
@@ -95,9 +134,16 @@ German/fallback templates, escaping, invalid origins/configuration, a temporary
 delivery rejection followed by successful retry and invitation sent counters.
 It never contacts real recipients. PostgreSQL operator checks are separate.
 
-These transport checks do not establish the whole browser lifecycle. In
-particular, password-reset links retain the upstream four-hour login JWT, which
-is **reusable until expiry and not bound to a reset-only purpose**. One-time,
-purpose-bound recovery, expiry/replay tests through real authentication,
-notification/digest templates and external relay acceptance remain outstanding
-in issue #4 before public release. No production rollout is implied.
+`password-recovery.test.cjs` covers the GraphQL request, the real Passport JWT
+strategy's rejection of opaque recovery tokens, and the HTTP origin/JSON boundary.
+`password-recovery.integration.cjs` runs with
+`HYLO_SELF_HOSTING_INTEGRATION=1`, `DATABASE_URL` and `REDIS_URL` against disposable
+PostgreSQL and Redis services. It tests expiry, replay, concurrent redemption,
+credential/eligibility changes, stored-session revocation and failure rollback
+using real bcrypt hashes. Docker CI also checks the actual Sails recovery routes.
+
+Local browser review uses only synthetic accounts. A screenshot of the form is
+available in [the review evidence](../../output/playwright/password-recovery-form.png).
+The full pilot lifecycle with the real external relay and identity provider,
+notification/digest templates, uploads and restore acceptance remain outstanding.
+No production rollout is implied.
