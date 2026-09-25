@@ -154,7 +154,9 @@ openssl genrsa -traditional 2048 | openssl base64 -A
 
 Place the result in `OIDC_KEYS` without publishing it. Keep a backup; changing
 signing and session secrets affects active sessions/tokens. Map credentials are
-needed for map features, separately from successful application startup.
+needed for map features, separately from successful application startup. Follow
+the [map setup guide](MAPS.md) to configure the public build-time token, rebuild
+the image and distinguish browser maps from backend geocoding.
 
 ## Own origin, cookies and reverse proxy
 
