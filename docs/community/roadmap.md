@@ -1,6 +1,6 @@
 # Community functionality roadmap
 
-Status: implementation plan, not a claim of released functionality.
+Status: incremental implementation in draft PR #21; not a released feature set.
 
 The community fork will retain the existing Hylo core and improve complete user
 workflows incrementally. Docker operation, configurable external OIDC providers
@@ -30,11 +30,23 @@ the stored voting methods are currently single and multi-unrestricted. Discussio
 and proposals are separate post types. A durable sequence of decision rounds,
 per-alternative resistance ballots and accountable outcomes is not yet established.
 
-One concrete defect is being addressed first: the editor submits all options on
+One concrete defect is repaired on the implementation branch: the editor submits all options on
 an ordinary proposal edit, and the backend used to delete their votes even if the
 options were unchanged. Preserving identical options is a bounded repair. It does
 not make changes to active or completed decisions immutable; round history is the
 next structural step.
+
+The next implemented increment adds a member-only discussion overview: editable
+context, a separate summary, open questions and attributed revision history.
+Existing posts, comments and attachments are preserved. See the
+[discussion review evidence and remaining release gates](review/discussion-overview.md).
+This does not yet add decision rounds, systemic consensus or automated summaries.
+Issue #14 remains open until the broader legacy access checks and integration
+with the deployment branch are complete.
+
+With every increment, assess [optional AI assistance](ai-assistance.md): useful
+tasks, minimum permitted input, human review and failure cases. The core workflow
+must remain usable without an AI provider.
 
 ### Delivery slices
 

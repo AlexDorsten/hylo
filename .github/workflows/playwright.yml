@@ -145,12 +145,12 @@ jobs:
             echo "OIDC_KEYS=$(openssl genrsa -traditional 2048 2>/dev/null | base64 -w0)" >> "$GITHUB_ENV"
           fi
 
-      - name: Check proposal option comparison and editor save behavior
+      - name: Check proposal and discussion editor behavior
         run: |
           yarn workspace @hylo/shared test --runInBand --runTestsByPath src/ProposalHelpers.test.js
-          yarn workspace web test --watchAll=false --runInBand --runTestsByPath src/components/PostEditor/PostEditor.test.js
+          yarn workspace web test --watchAll=false --runInBand --runTestsByPath src/components/PostEditor/PostEditor.test.js src/components/DiscussionOverview/DiscussionOverview.test.js src/routes/PostDetail/PostDetail.test.js src/routes/PostDetail/Comments/CommentForm/CommentForm.test.js
 
-      - name: Check proposal vote persistence against PostgreSQL
+      - name: Check proposal votes and discussion permissions against PostgreSQL
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_hylo_proposals
           # Sails also loads the built-in OIDC provider during model tests.
@@ -158,7 +158,7 @@ jobs:
           DOMAIN: localhost:3000
         run: |
           createdb --maintenance-db=postgresql://postgres:postgres@localhost:5432/postgres test_hylo_proposals
-          yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js --timeout 10000
+          yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js test/unit/graphql/Discussions.test.js --timeout 10000
 
       - name: Run Playwright E2E (isolated DB + API + web)
         working-directory: apps/web

@@ -1,6 +1,28 @@
 scalar Date
 scalar JSON
 
+# These fields are served only through membership-checked discussion queries.
+# They deliberately do not extend the general Post/search/subscription payload.
+type DiscussionAuthor {
+  id: ID!
+  name: String
+}
+
+type DiscussionRevision {
+  version: Int!
+  context: String!
+  summary: String!
+  openQuestions: [String!]!
+  createdAt: String
+  author: DiscussionAuthor
+}
+
+type DiscussionOverview {
+  canEdit: Boolean!
+  current: DiscussionRevision!
+  lastSummary: DiscussionRevision
+}
+
 enum LocationDisplayPrecision {
   precise
   near
@@ -34,6 +56,8 @@ enum GroupStatus {
 }
 
 type Query {
+  discussionOverview(postId: ID!): DiscussionOverview
+  discussionHistory(postId: ID!, beforeVersion: Int): [DiscussionRevision!]
   # Find an Activity by ID
   activity(id: ID): Activity
 
@@ -3188,6 +3212,7 @@ type ZapierTrigger {
 
 # The mutations accepted by Hylo
 type Mutation {
+  updateDiscussion(postId: ID!, expectedVersion: Int!, context: String!, summary: String!, openQuestions: [String!]!): DiscussionOverview
   # For a steward to accept an invitation to one of their groups to be related to another group (either as a parent or a child)
   acceptGroupRelationshipInvite(groupRelationshipInviteId: ID): AcceptGroupRelationshipInviteResult
   # For a steward to accept a request from a Person to join a Group
