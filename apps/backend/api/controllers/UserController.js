@@ -54,14 +54,16 @@ module.exports = {
 
     return User.create(attrs)
       .then(async (user) => {
-        Queue.classMethod('Email', 'sendFinishRegistration', {
-          email,
+        const { token } = await UserVerificationCode.create(user.get('email'))
+        await Queue.classMethod('Email', 'sendFinishRegistration', {
+          email: user.get('email'),
+          locale: user.getLocale(),
           templateData: {
             api_client: req.api_client?.name,
             group_name: group && group.get('name'),
             group_avatar_url: group && group.get('avatar_url'),
             group_url: Frontend.Route.group(group),
-            verify_url: Frontend.Route.verifyEmail(email, user.generateJWT())
+            verify_url: Frontend.Route.verifyEmail(user.get('email'), token)
           }
         })
 

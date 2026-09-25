@@ -5,6 +5,7 @@
  */
 
 module.exports.routes = {
+  'GET /noo/capabilities': 'InstanceController.capabilities',
   // for OIDC
   // XXX: unclear if its ok to redirect like this, can we somehow directly call the oidc-provider discovery function here?
   'GET    /.well-known/openid-configuration':             '/noo/oauth/.well-known/openid-configuration',

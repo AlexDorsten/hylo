@@ -3055,5 +3055,6 @@
   "Sign-in provider connected.": "Fournisseur de connexion associé.",
   "Connect {{provider}}": "Associer {{provider}}",
   "Sign in with {{provider}}": "Se connecter avec {{provider}}",
-  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "La connexion avec le fournisseur a échoué. Connectez-vous localement et associez d’abord le fournisseur dans les paramètres du compte, ou réessayez."
+  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "La connexion avec le fournisseur a échoué. Connectez-vous localement et associez d’abord le fournisseur dans les paramètres du compte, ou réessayez.",
+  "Payments are disabled on this instance.": "Les paiements sont désactivés sur cette instance."
 }

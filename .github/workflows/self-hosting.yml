@@ -36,11 +36,17 @@ jobs:
           cp .env.example .env
           cp backend.env.example backend.env
           python3 - <<'PY'
-          import pathlib, secrets
+          import base64, pathlib, secrets, subprocess
           file = pathlib.Path('.env')
           content = file.read_text()
           for name in ('POSTGRES_PASSWORD', 'APP_DB_PASSWORD', 'COOKIE_SECRET', 'JWT_SECRET'):
               content = content.replace(name + '=\n', name + '=' + secrets.token_hex(32) + '\n')
+          file.write_text(content)
+          file = pathlib.Path('backend.env')
+          key = subprocess.check_output(['openssl', 'genrsa', '-traditional', '2048'], stderr=subprocess.DEVNULL)
+          content = file.read_text().replace('OIDC_KEYS=\n', 'OIDC_KEYS=' + base64.b64encode(key).decode() + '\n')
+          # This startup check must not send external mail. SMTP has a local sink test.
+          content = content.replace('EMAIL_PROVIDER=smtp', 'EMAIL_PROVIDER=none')
           file.write_text(content)
           PY
           docker compose --profile application --profile maintenance config --quiet
@@ -64,8 +70,34 @@ jobs:
           grep -q 'Refusing bootstrap: application relations already exist' /tmp/bootstrap-retry.log
       - name: Verify external identity migration and concurrent callbacks
         run: docker compose run --rm --no-deps -e HYLO_SELF_HOSTING_INTEGRATION=1 maintenance node --test /app/test/self-hosting/oidc-storage.integration.cjs
+      - name: Verify first-operator lookup against PostgreSQL
+        run: docker compose run --rm --no-deps -e HYLO_SELF_HOSTING_INTEGRATION=1 maintenance node --test /app/test/self-hosting/operator.integration.cjs
       - name: Verify update command after initial installation
         run: docker compose run --rm --no-deps maintenance
+      - name: Start API and worker without Stripe credentials
+        run: |
+          docker compose up -d api worker
+          docker compose exec -T api node /app/test/self-hosting/runtime-smoke.cjs
+          for attempt in {1..60}; do
+            if docker compose logs worker 2>&1 | grep -q 'Aloft\.'; then break; fi
+            sleep 2
+          done
+          docker compose logs worker 2>&1 | grep -q 'Aloft\.'
+          test "$(docker inspect --format '{{.State.Running}}' "$(docker compose ps -q worker)")" = true
+      - name: Run each schedule without Stripe credentials
+        run: |
+          for interval in every10minutes hourly daily; do
+            timeout 180 docker compose run --rm --no-deps maintenance node cron.js --interval "$interval" > "/tmp/cron-$interval.log" 2>&1
+            grep -q 'Aloft\.' "/tmp/cron-$interval.log"
+            grep -q 'Done' "/tmp/cron-$interval.log"
+            if grep -Eq 'error:|Couldn.t lift|Unhandled|PAYMENTS_DISABLED|renewal reminder|expired access notification' "/tmp/cron-$interval.log"; then
+              cat "/tmp/cron-$interval.log"
+              exit 1
+            fi
+          done
+      - name: Show synthetic startup diagnostics on failure
+        if: failure()
+        run: docker compose logs --tail=100 api worker
       - name: Tear down disposable CI data
         if: always()
         run: docker compose --profile application --profile maintenance down -v

@@ -13670,6 +13670,7 @@ __metadata:
     mock-require: "npm:^2.0.2"
     nock: "npm:^13.5.5"
     node-fetch: "npm:^2.7.0"
+    nodemailer: "npm:10.0.10"
     nodemon: "npm:^1.12.1"
     nyc: "npm:^10.0"
     oidc-provider: "npm:^7.11.3"
@@ -29295,6 +29296,13 @@ __metadata:
   dependencies:
     asn1: "npm:^0.2.4"
   checksum: 10/310187a9b25952b4c39371313e906894209aee5e7ee3e984b27bef44f867e5b8a78f4171f232edca22f30c3ea80e585e39e160f9912d632d179416852b8b62c1
+  languageName: node
+  linkType: hard
+
+"nodemailer@npm:10.0.10":
+  version: 10.0.10
+  resolution: "nodemailer@npm:10.0.10"
+  checksum: 10/3aeab7cd9aa087cb6280463a7c6b30dcffe2b901f7690cecc6d104196b1d31a2f25764f74a4bf84c05667fa75174a10462e2ec71f43a275aca96c95f45299bcf
   languageName: node
   linkType: hard
 

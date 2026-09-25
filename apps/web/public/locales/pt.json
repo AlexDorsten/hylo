@@ -3056,5 +3056,6 @@
   "Sign-in provider connected.": "Provedor de acesso conectado.",
   "Connect {{provider}}": "Conectar {{provider}}",
   "Sign in with {{provider}}": "Entrar com {{provider}}",
-  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "O acesso pelo provedor falhou. Entre localmente e conecte primeiro o provedor nas configurações da conta ou tente novamente."
+  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "O acesso pelo provedor falhou. Entre localmente e conecte primeiro o provedor nas configurações da conta ou tente novamente.",
+  "Payments are disabled on this instance.": "Os pagamentos estão desativados nesta instância."
 }

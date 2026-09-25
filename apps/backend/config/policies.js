@@ -21,7 +21,11 @@
 module.exports.policies = {
   '*': false,
 
+  InstanceController: { capabilities: true },
+
   AdminController: {
+    stripeAnalytics: ['isAdmin', 'paymentsEnabled'],
+    setStripeSalesPaused: ['isAdmin', 'paymentsEnabled'],
     '*': 'isAdmin'
   },
 
@@ -52,7 +56,7 @@ module.exports.policies = {
   },
 
   SubscriptionController: {
-    '*': true
+    '*': 'paymentsEnabled'
   },
 
   CookieConsentController: {
@@ -106,13 +110,13 @@ module.exports.policies = {
   },
 
   PaymentController: {
-    registerStripe: ['sessionAuth']
+    registerStripe: ['sessionAuth', 'paymentsEnabled']
   },
 
   StripeController: {
-    webhook: true,
-    checkoutSuccess: true,
-    checkoutCancel: true,
-    health: true
+    webhook: 'paymentsEnabled',
+    checkoutSuccess: 'paymentsEnabled',
+    checkoutCancel: 'paymentsEnabled',
+    health: 'paymentsEnabled'
   }
 }

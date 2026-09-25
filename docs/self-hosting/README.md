@@ -3,9 +3,9 @@
 This fork is preparing a portable Docker installation of Hylo. The foundation
 builds a shared application image, provisions private data services and provides
 a guarded first-install command. **It is not yet a complete production-ready
-self-hosting release.** The current application still requires upstream-style
-Stripe configuration, operator-owned email templates and an upload
-integration. The application profile is deliberately opt-in while those issues
+self-hosting release.** Payments can now be disabled without Stripe credentials, and SMTP supports
+the four account-lifecycle templates. Direct uploads, notification templates,
+recovery-token hardening and full operational acceptance are still outstanding. The application profile is deliberately opt-in while those issues
 are resolved. No placeholder provider credentials are supplied.
 
 All examples use `hylo.example.org`. Keep real deployment details and filled
@@ -14,7 +14,7 @@ configuration files outside version control and public issue discussions.
 The [accepted community direction](../adr/0001-community-self-hosting.md) keeps
 the existing core and adds SMTP, direct uploads to a file volume and configurable
 external OIDC login incrementally. External OIDC can now be enabled for existing,
-verified local accounts; SMTP and direct storage remain planned. The target is a usable community without mandatory
+verified local accounts; the first SMTP slice is available and direct storage remains planned. The target is a usable community without mandatory
 SaaS accounts; adding containers alone does not remove the application coupling.
 
 ## Containers and dependencies
@@ -126,16 +126,17 @@ rotate roles in an existing database volume.
 
 The upstream seeds create reference data, a starter group and a helper account.
 They do not establish a trusted operator administrator. Some seeded assets still
-reference upstream URLs. Explicit administrator provisioning is tracked in #3.
+reference upstream URLs. Use the [first-operator procedure](FIRST_OPERATOR.md) to select a deliberately
+registered, verified password account. The lookup refuses the seed helper.
 
 ## Prepare application integrations
 
 Fill `backend.env` with independently owned settings only after reviewing:
 
-- [#3 — login and administrator provisioning](https://github.com/AlexDorsten/hylo/issues/3): Google/LinkedIn are now registered only when configured. Administrator and tester access require explicit local IDs; domain-based shortcuts and the separate admin Google login are removed. First-operator provisioning and full local lifecycle acceptance remain.
-- [#4 — SMTP email delivery](https://github.com/AlexDorsten/hylo/issues/4): Sendwithus currently uses fixed upstream template IDs. SMTP and repository-owned templates are the agreed replacement baseline; `SMTP_HOST` does not enable them yet. `EMAIL_NOTIFICATIONS_ENABLED=false` does not suppress authentication email.
+- [#3 — login and administrator provisioning](https://github.com/AlexDorsten/hylo/issues/3): Google/LinkedIn are now registered only when configured. Administrator and tester access require explicit local IDs; domain-based shortcuts and the separate admin Google login are removed. A read-only first-operator lookup is available; full local lifecycle acceptance remains. See [first-operator setup](FIRST_OPERATOR.md).
+- [#4 — SMTP email delivery](https://github.com/AlexDorsten/hylo/issues/4): Set `EMAIL_PROVIDER=smtp` for repository-owned signup verification, password recovery, finish-registration and invitation templates. Configure TLS, sender and relay credentials using the [SMTP guide](SMTP.md). Notification/digest templates are not yet ported; keep `EMAIL_NOTIFICATIONS_ENABLED=false`. Authentication email is still required.
 - [#5 — direct uploads and privacy](https://github.com/AlexDorsten/hylo/issues/5): the picker currently uses Filestack and backend storage uses AWS S3. The planned baseline is an authenticated upload/download path and a persistent file volume, with S3-compatible storage as a later adapter.
-- [#6 — optional payments](https://github.com/AlexDorsten/hylo/issues/6): Stripe is currently required during backend initialization even for a community that does not intend to use payments.
+- [#6 — optional payments](https://github.com/AlexDorsten/hylo/issues/6): Keep `HYLO_PAYMENTS_ENABLED=false` for a community without payments. No Stripe key is needed; payment API calls are rejected, browser entry points are hidden or unavailable, and payment reminder jobs are skipped. The public `/noo/capabilities` endpoint exposes this flag without credentials. Existing paid-content authorization is preserved; disabling payments does not make previously paid content free. When the flag is unset, an existing Stripe key retains legacy enabled behavior. Explicitly enabling payments requires a real key and the remaining Stripe configuration. Full community-flow acceptance is still required.
 - [#11 — own OIDC providers](https://github.com/AlexDorsten/hylo/issues/11): the first external login slice supports multiple configured issuers and password-confirmed linking to existing verified local accounts. See [OIDC setup and limitations](OIDC.md). Registration, unlinking and independent-provider acceptance remain. Hylo's embedded provider and `OIDC_KEYS` are preserved.
 - [#12 — community capabilities](https://github.com/AlexDorsten/hylo/issues/12): consistent disabling of unused integrations and a core-flow test without public SaaS access remain required.
 
@@ -185,8 +186,8 @@ hylo.example.org {
 
 Preserve the path prefixes. Forward the original host and scheme and support
 WebSocket upgrades. If you change loopback ports, update the proxy accordingly.
-Database and Redis must stay unpublished. After resolving the integration and
-administrator issues above, start the application in an isolated test setup:
+Database and Redis must stay unpublished. After configuring the signing key and SMTP relay, start the application in an
+isolated test setup. Complete [first-operator setup](FIRST_OPERATOR.md) there:
 
 ```sh
 docker compose --profile application up -d
@@ -258,9 +259,12 @@ The `Docker self-hosting foundation` workflow validates Compose, builds the
 image, runs focused configuration/HTTP tests, imports schema and seeds as the
 non-superuser role, rejects a second bootstrap and exercises migrations.
 It also tests external OIDC with signed two-issuer fixtures, PostgreSQL identity
-ownership/migration equivalence and atomic Redis callbacks. It uses disposable
-CI-generated secrets and no provider accounts. It does not establish full
-application, independent-provider, mail, upload or restore acceptance.
+ownership/migration equivalence and atomic Redis callbacks. It also exercises the operator lookup against PostgreSQL, the API/worker and
+all three schedule entry points without Stripe keys, and real account-email
+delivery to a local SMTP sink, including a failure followed by a retry. It uses
+disposable CI-generated secrets and no provider accounts. These checks do not
+establish full registration/recovery, independent-provider, external mail
+deliverability, upload or restore acceptance.
 Check the workflow result for the exact revision before using the artifacts.
 
 References: [PostGIS image](https://github.com/postgis/docker-postgis),

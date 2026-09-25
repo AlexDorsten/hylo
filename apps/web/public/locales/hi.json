@@ -3056,5 +3056,6 @@
   "Sign-in provider connected.": "साइन-इन प्रदाता जुड़ गया।",
   "Connect {{provider}}": "{{provider}} जोड़ें",
   "Sign in with {{provider}}": "{{provider}} से साइन इन करें",
-  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "प्रदाता से साइन-इन विफल हुआ। स्थानीय लॉगिन से प्रवेश करें और पहले खाता सेटिंग में प्रदाता जोड़ें, या दोबारा प्रयास करें।"
+  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "प्रदाता से साइन-इन विफल हुआ। स्थानीय लॉगिन से प्रवेश करें और पहले खाता सेटिंग में प्रदाता जोड़ें, या दोबारा प्रयास करें।",
+  "Payments are disabled on this instance.": "इस इंस्टेंस पर भुगतान बंद हैं।"
 }

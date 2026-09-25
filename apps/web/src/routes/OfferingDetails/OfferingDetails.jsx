@@ -1,3 +1,4 @@
+import withPaymentCapability from 'components/PaymentCapability'
 import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
@@ -23,7 +24,7 @@ import setReturnToPath from 'store/actions/setReturnToPath'
  * This component is accessible without authentication and supports both
  * published and unlisted offerings.
  */
-export default function OfferingDetails () {
+function OfferingDetails () {
   const { t } = useTranslation()
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -357,3 +358,5 @@ export default function OfferingDetails () {
     </Div100vh>
   )
 }
+
+export default withPaymentCapability(OfferingDetails)

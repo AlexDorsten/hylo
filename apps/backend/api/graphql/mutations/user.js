@@ -17,13 +17,10 @@ export const sendEmailVerification = async (_, { email }) => {
     const { code, token } = await UserVerificationCode.create(email)
     const verifyUrl = Frontend.Route.verifyEmail(email, token)
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`!!! Verification for ${email} -- code: ${code} link: ${verifyUrl}`)
-    }
-
-    Queue.classMethod('Email', 'sendEmailVerification', {
+    await Queue.classMethod('Email', 'sendEmailVerification', {
       email,
       version: 'with link',
+      locale: user.getLocale(),
       templateData: {
         code,
         verify_url: verifyUrl
@@ -125,8 +122,9 @@ export const sendPasswordReset = async (_, { email }) => {
       const nextUrl = Frontend.Route.evo.passwordSetting()
       const token = user.generateJWT()
 
-      Queue.classMethod('Email', 'sendPasswordReset', {
+      await Queue.classMethod('Email', 'sendPasswordReset', {
         email: user.get('email'),
+        locale: user.getLocale(),
         templateData: {
           login_url: Frontend.Route.jwtLogin(user, token, nextUrl)
         }

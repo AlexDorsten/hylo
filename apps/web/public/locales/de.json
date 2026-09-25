@@ -3056,5 +3056,6 @@
   "Sign-in provider connected.": "Anmeldeanbieter verknüpft.",
   "Connect {{provider}}": "{{provider}} verknüpfen",
   "Sign in with {{provider}}": "Mit {{provider}} anmelden",
-  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "Die Anmeldung beim Anbieter ist fehlgeschlagen. Melde dich lokal an und verknüpfe den Anbieter zuerst in den Kontoeinstellungen oder versuche es erneut."
+  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "Die Anmeldung beim Anbieter ist fehlgeschlagen. Melde dich lokal an und verknüpfe den Anbieter zuerst in den Kontoeinstellungen oder versuche es erneut.",
+  "Payments are disabled on this instance.": "Zahlungen sind auf dieser Instanz deaktiviert."
 }

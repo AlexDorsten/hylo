@@ -3064,5 +3064,6 @@
   "Sign-in provider connected.": "Proveedor de acceso vinculado.",
   "Connect {{provider}}": "Vincular {{provider}}",
   "Sign in with {{provider}}": "Iniciar sesión con {{provider}}",
-  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "El acceso con el proveedor falló. Inicia sesión localmente y vincula primero el proveedor en los ajustes de cuenta, o inténtalo de nuevo."
+  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "El acceso con el proveedor falló. Inicia sesión localmente y vincula primero el proveedor en los ajustes de cuenta, o inténtalo de nuevo.",
+  "Payments are disabled on this instance.": "Los pagos están desactivados en esta instancia."
 }

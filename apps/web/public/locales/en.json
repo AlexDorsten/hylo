@@ -3053,5 +3053,6 @@
   "Sign-in provider connected.": "Sign-in provider connected.",
   "Connect {{provider}}": "Connect {{provider}}",
   "Sign in with {{provider}}": "Sign in with {{provider}}",
-  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again."
+  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.",
+  "Payments are disabled on this instance.": "Payments are disabled on this instance."
 }

@@ -1,3 +1,4 @@
+import useInstanceCapabilities from 'hooks/useInstanceCapabilities'
 import { compact } from 'lodash/fp'
 import React, { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
@@ -75,6 +76,7 @@ function PhoneSettingsMenuList ({ items, groupSlug }) {
 }
 
 export default function GroupSettings () {
+  const { payments } = useInstanceCapabilities()
   const dispatch = useDispatch()
   const routeParams = useParams()
   const { t } = useTranslation()
@@ -260,7 +262,7 @@ export default function GroupSettings () {
         canAdminister ? importSettings : null,
         canAdminister ? exportSettings : null,
         canAdminister ? appearanceSettings : null,
-        canAdminister ? paidContentSettings : null,
+        canAdminister && payments ? paidContentSettings : null,
         canAdminister ? deleteSettings : null
       ])}
     />

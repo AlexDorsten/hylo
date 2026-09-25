@@ -16,3 +16,13 @@ included. These are UI checks, not an end-to-end identity-provider acceptance te
 The local password form also remained available when the capabilities endpoint
 returned HTTP 503. Protocol, controller and database verification are described
 in [the OIDC guide](../../docs/self-hosting/OIDC.md).
+
+## Community payments disabled
+
+`community-payments-disabled.png` shows the production build at a synthetic
+public offering URL with German locale and `payments: false` from a locally
+mocked `/noo/capabilities` response. The offering component does not mount or
+request payment data. The same check passed with HTTP 503 from that endpoint:
+zero payment queries and the unavailable message remained visible. Optional
+cookies were declined and external network requests were blocked. This is UI
+evidence, not a successful checkout or a full community-flow acceptance test.
