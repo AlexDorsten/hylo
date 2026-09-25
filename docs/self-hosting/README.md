@@ -108,6 +108,15 @@ seeds also record the migrations represented by that schema. **Do not run
 migrations before the initial schema/seeds, and never run default seeds on an
 existing installation.**
 
+The upstream migration seed marks every migration file as applied. To prevent
+silently skipping later changes, fresh bootstrap checks schema and migration
+hashes against `deploy/docker/schema-snapshot.json` before connecting to the
+database. When updating this snapshot, maintainers must first verify that the
+SQL represents every listed migration and regenerate the dump if needed, then
+update both hashes and pass the disposable bootstrap checks. Updating hashes
+alone is not a schema update. This guard does not affect normal migrations on
+an existing installation.
+
 Bootstrap checks for existing application relations under a database lock and
 refuses to reinitialize them. If schema import fails, its transaction rolls back.
 If seeding fails, the schema remains and bootstrap refuses a retry. Inspect the

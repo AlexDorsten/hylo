@@ -1,10 +1,22 @@
 const { createRequire } = require('node:module')
-const { readFileSync } = require('node:fs')
+const { readFileSync, readdirSync } = require('node:fs')
+const { createHash } = require('node:crypto')
 const { spawnSync } = require('node:child_process')
 const path = require('node:path')
 
 const root = path.resolve(__dirname, '../..')
 const backendRequire = createRequire(path.join(root, 'apps/backend/package.json'))
+
+function verifySchemaSnapshot (dump, migrationsDirectory, snapshot) {
+  const schemaHash = createHash('sha256').update(dump).digest('hex')
+  const migrationHash = createHash('sha256')
+  for (const name of readdirSync(migrationsDirectory).filter(name => name.endsWith('.js')).sort()) {
+    migrationHash.update(name).update('\0').update(readFileSync(path.join(migrationsDirectory, name))).update('\0')
+  }
+  if (schemaHash !== snapshot.schemaSha256 || migrationHash.digest('hex') !== snapshot.migrationsSha256) {
+    throw new Error('Schema snapshot or migrations changed; review their alignment and update schema-snapshot.json before fresh bootstrap. Existing installations must use migrations.')
+  }
+}
 
 // Extensions are installed by the database administrator. The schema itself is
 // owned by the application role. Reject unexpected dump changes for review.
@@ -27,7 +39,12 @@ async function bootstrap () {
   if (process.env.NODE_ENV !== 'production') throw new Error('Bootstrap requires NODE_ENV=production')
   const { Client } = backendRequire('pg')
   const connection = backendRequire('./knexfile.js').production.connection
-  const schema = applicationSchema(readFileSync(path.join(root, 'apps/backend/migrations/schema.sql'), 'utf8'))
+  const migrationsDirectory = path.join(root, 'apps/backend/migrations')
+  const dump = readFileSync(path.join(migrationsDirectory, 'schema.sql'), 'utf8')
+  // The upstream seed marks every migration as applied. Fail closed if that set
+  // drifts from the reviewed schema, rather than silently skipping new changes.
+  verifySchemaSnapshot(dump, migrationsDirectory, require('./schema-snapshot.json'))
+  const schema = applicationSchema(dump)
   const client = new Client(connection)
   await client.connect()
   try {
@@ -59,7 +76,7 @@ async function bootstrap () {
   console.log('Database initialized. Do not run bootstrap or default seeds on this database again.')
 }
 
-module.exports = { applicationSchema }
+module.exports = { applicationSchema, verifySchemaSnapshot }
 if (require.main === module) {
   bootstrap().catch(error => {
     console.error(error.message)
