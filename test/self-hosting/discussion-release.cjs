@@ -12,10 +12,14 @@ const commentId = '8000000000003'
 const mediaId = '8000000000004'
 const legacy = '<p>Original discussion with <a href="https://example.org/evidence">evidence</a>.</p>'
 const revision = {
-  post_id: postId, version: 1, author_id: userId,
+  post_id: postId,
+  version: 1,
+  author_id: userId,
   created_at: new Date('2026-09-25T12:00:00Z'),
-  context: 'Preserved context', summary: 'Reviewed summary',
-  open_questions: ['What evidence is still missing?'], summary_changed: true
+  context: 'Preserved context',
+  summary: 'Reviewed summary',
+  open_questions: ['What evidence is still missing?'],
+  summary_changed: true
 }
 
 async function structure (db) {
@@ -53,6 +57,10 @@ async function main () {
   const db = backendRequire('knex')({ client: 'pg', connection: url.href, pool: { min: 0, max: 2 } })
   const command = process.argv[2]
   try {
+    const privileges = await db.raw('SELECT current_user AS name, rolsuper FROM pg_roles WHERE rolname = current_user')
+    assert.deepEqual(privileges.rows, [{ name: 'hylo', rolsuper: false }])
+    const owner = await db.raw("SELECT tableowner FROM pg_tables WHERE schemaname = 'public' AND tablename = 'posts'")
+    assert.equal(owner.rows[0].tableowner, 'hylo')
     if (command === 'baseline') {
       assert.equal(url.pathname, '/hylo_ci_upgrade')
       assert.equal((await db('discussion_revisions').count('* as count').first()).count, '0')

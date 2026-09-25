@@ -27,8 +27,11 @@ restored into a separate database, including content, identity and revision chec
 and schema comparison with fresh bootstrap. Finally, the pre-upgrade backup is
 restored and verified as a recovery rehearsal.
 
-Restore uses the application role with extensions preinstalled by the database
-administrator. Ownership, grants and comments from the archive are not imported.
+Restore uses the database administrator because the PostGIS image also creates
+topology/geocoder extensions and their privileged metadata. Archive ownership is
+preserved: application relations belong to `hylo`, extension objects to `postgres`.
+Archive grants are omitted; migration and data checks then run as the application
+role. The target must already contain both roles, with its own credentials.
 This verifies database data and schema recovery; it does not verify uploaded file
 bytes, Redis queues/sessions or an operator's secret store. Those remain part of
 the complete instance-backup work in #8. The rehearsal must never target a pilot
