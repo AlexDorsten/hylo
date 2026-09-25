@@ -2,8 +2,11 @@
 
 This is the Hylo community-platform monorepo. Use the root project guide,
 workspace documentation and relevant code as the current domain references.
-No `CONTEXT.md`, `CONTEXT-MAP.md` or ADR directory has been established for this
-fork yet; do not invent missing terminology or treat absent documents as blockers.
+The accepted community direction is recorded in
+`docs/adr/0001-community-self-hosting.md`. No `CONTEXT.md` or `CONTEXT-MAP.md`
+has been established; do not invent missing terminology or treat absent
+documents as blockers. The tool-independent contributor guide is
+`CONTRIBUTING.md`.
 
 The generic Docker deployment guide lives at `docs/self-hosting/README.md`.
 Deployment files live at `deploy/docker/`. Provider choices and unresolved

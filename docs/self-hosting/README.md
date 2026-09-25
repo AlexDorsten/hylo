@@ -11,6 +11,12 @@ are resolved. No placeholder provider credentials are supplied.
 All examples use `hylo.example.org`. Keep real deployment details and filled
 configuration files outside version control and public issue discussions.
 
+The [accepted community direction](../adr/0001-community-self-hosting.md) keeps
+the existing core and adds SMTP, direct uploads to a file volume and configurable
+external OIDC login incrementally. These adapters are planned, not enabled by
+the current Compose file. The target is a usable community without mandatory
+SaaS accounts; adding containers alone does not remove the application coupling.
+
 ## Containers and dependencies
 
 | Service | Image/process | Role |
@@ -118,9 +124,11 @@ reference upstream URLs. Explicit administrator provisioning is tracked in #3.
 Fill `backend.env` with independently owned settings only after reviewing:
 
 - [#3 — login and administrator provisioning](https://github.com/AlexDorsten/hylo/issues/3): OAuth strategies currently initialize eagerly and upstream email-based administrator shortcuts remain. Independent deployment must resolve these before public use.
-- [#4 — email delivery](https://github.com/AlexDorsten/hylo/issues/4): Sendwithus uses fixed upstream template IDs. A key alone is insufficient; `SMTP_HOST` is not a supported adapter. `EMAIL_NOTIFICATIONS_ENABLED=false` does not suppress authentication email.
-- [#5 — uploads and privacy](https://github.com/AlexDorsten/hylo/issues/5): the picker uses Filestack and backend storage uses AWS S3. S3-compatible endpoints and private attachment access need explicit implementation and testing.
+- [#4 — SMTP email delivery](https://github.com/AlexDorsten/hylo/issues/4): Sendwithus currently uses fixed upstream template IDs. SMTP and repository-owned templates are the agreed replacement baseline; `SMTP_HOST` does not enable them yet. `EMAIL_NOTIFICATIONS_ENABLED=false` does not suppress authentication email.
+- [#5 — direct uploads and privacy](https://github.com/AlexDorsten/hylo/issues/5): the picker currently uses Filestack and backend storage uses AWS S3. The planned baseline is an authenticated upload/download path and a persistent file volume, with S3-compatible storage as a later adapter.
 - [#6 — optional payments](https://github.com/AlexDorsten/hylo/issues/6): Stripe is currently required during backend initialization even for a community that does not intend to use payments.
+- [#11 — own OIDC providers](https://github.com/AlexDorsten/hylo/issues/11): configurable external login is not implemented yet. Hylo's embedded OIDC provider and `OIDC_KEYS` serve a different role; they do not configure incoming SSO. The planned login adapter supports multiple issuers while retaining local login and explicit administrator grants.
+- [#12 — community capabilities](https://github.com/AlexDorsten/hylo/issues/12): consistent disabling of unused integrations and a core-flow test without public SaaS access remain required.
 
 Generate and store an independent OIDC signing key; the parser expects a base64
 encoded PKCS#1 PEM RSA private key. For OpenSSL 3:
@@ -233,8 +241,9 @@ the persistent database and queue volumes.
 
 1. [#1 Docker build/bootstrap](https://github.com/AlexDorsten/hylo/issues/1) and [#2 custom origin](https://github.com/AlexDorsten/hylo/issues/2): foundation in this branch.
 2. [#3 identity](https://github.com/AlexDorsten/hylo/issues/3) and [#6 optional payments](https://github.com/AlexDorsten/hylo/issues/6): remove mandatory unused-provider requirements.
-3. [#4 mail](https://github.com/AlexDorsten/hylo/issues/4) and [#5 uploads](https://github.com/AlexDorsten/hylo/issues/5): decide and implement independently owned integrations.
-4. [#7 scheduling](https://github.com/AlexDorsten/hylo/issues/7), [#8 restore](https://github.com/AlexDorsten/hylo/issues/8) and [#9 verified guide](https://github.com/AlexDorsten/hylo/issues/9): complete operational acceptance.
+3. [#4 mail](https://github.com/AlexDorsten/hylo/issues/4) and [#5 uploads](https://github.com/AlexDorsten/hylo/issues/5): implement SMTP with owned templates and direct uploads into a file volume.
+4. [#11 OIDC providers](https://github.com/AlexDorsten/hylo/issues/11) and [#12 community capabilities](https://github.com/AlexDorsten/hylo/issues/12): add external login and verify the core without mandatory SaaS accounts.
+5. [#7 scheduling](https://github.com/AlexDorsten/hylo/issues/7), [#8 restore](https://github.com/AlexDorsten/hylo/issues/8) and [#9 verified guide](https://github.com/AlexDorsten/hylo/issues/9): complete operational acceptance.
 
 The `Docker self-hosting foundation` workflow validates Compose, builds the
 image, runs focused configuration/HTTP tests, imports schema and seeds as the
