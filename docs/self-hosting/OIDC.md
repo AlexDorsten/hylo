@@ -16,6 +16,9 @@ and independent-provider compatibility remain open before production release.
 
 ## Configure a confidential web client
 
+For ZITADEL, follow the [provider configuration recipe](ZITADEL.md), including
+its client-authentication choice and the existing-account acceptance procedure.
+
 1. Use the provider's exact HTTPS issuer URL, including its realm/path and
    trailing slash if present in discovery metadata. The backend must reach its
    discovery, token and JWKS endpoints over trusted HTTPS.

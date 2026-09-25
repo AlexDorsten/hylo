@@ -39,6 +39,10 @@ Outbound connections are needed for configured email, OAuth, upload and other
 providers. Adding an SMTP or object-storage container alone does not implement
 the adapters missing from this application. See the backlog below.
 
+An existing SMTP relay and an existing OIDC provider can be reused without adding
+containers for either service. A [ZITADEL setup recipe](ZITADEL.md) describes one
+provider option; deployment-specific addresses and credentials stay private.
+
 ## Prerequisites and versioning
 
 - A disposable Linux **amd64** test host, Docker Engine and Compose v2 with
