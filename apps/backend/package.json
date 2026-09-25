@@ -123,6 +123,7 @@
     "mixpanel": "^0.17.0",
     "node-fetch": "^2.7.0",
     "oidc-provider": "^7.11.3",
+    "openid-client": "6.8.8",
     "parse-redis-url": "0.0.2",
     "passport": "^0.2.1",
     "passport-google-oauth": "^2.0.0",

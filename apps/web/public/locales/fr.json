@@ -3047,5 +3047,13 @@
   "No role": "No role",
   "Only members with one of the required roles will actually be able to join the space.": "Only members with one of the required roles will actually be able to join the space.",
   "Go to group roles": "Go to group roles",
-  "Selected space": "Espace sélectionné"
+  "Selected space": "Espace sélectionné",
+  "External sign-in providers": "Fournisseurs de connexion externes",
+  "Confirm your current Hylo password to connect a provider. Your local login remains available.": "Confirmez votre mot de passe Hylo actuel pour associer un fournisseur. Votre connexion locale reste disponible.",
+  "Current Hylo password": "Mot de passe Hylo actuel",
+  "Unable to connect the provider. Check your password and verified email, then try again.": "Impossible d’associer le fournisseur. Vérifiez votre mot de passe et votre adresse e-mail confirmée, puis réessayez.",
+  "Sign-in provider connected.": "Fournisseur de connexion associé.",
+  "Connect {{provider}}": "Associer {{provider}}",
+  "Sign in with {{provider}}": "Se connecter avec {{provider}}",
+  "Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.": "La connexion avec le fournisseur a échoué. Connectez-vous localement et associez d’abord le fournisseur dans les paramètres du compte, ou réessayez."
 }

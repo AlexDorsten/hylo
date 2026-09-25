@@ -318,11 +318,11 @@ module.exports = {
     passport.authenticate('linkedin')(req, res)
   }),
 
-  finishLinkedinOauth: function (req, res, next) {
+  finishLinkedinOAuth: function (req, res, next) {
     return finishOAuth('linkedin', req, res, next)
   },
 
-  finishLinkedinTokenOauth: function (req, res, next) {
+  finishLinkedinTokenOAuth: function (req, res, next) {
     return finishOAuth('linkedin-token', req, res, next)
   },
 

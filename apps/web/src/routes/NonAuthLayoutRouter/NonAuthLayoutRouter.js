@@ -60,12 +60,12 @@ export default function NonAuthLayoutRouter (props) {
   }, [dispatch, setReturnToPath, returnToPath])
 
   return (
-    <Div100vh className='w-full h-full'>
+    <Div100vh className='w-full h-full overflow-y-auto'>
       <Helmet>
         <title>Hylo</title>
         <meta name='description' content='Prosocial Coordination for a Thriving Planet' />
       </Helmet>
-      <div className='relative w-full h-full flex flex-col justify-center items-center p-2'>
+      <div className='relative w-full min-h-full flex flex-col justify-center items-center px-2 pt-24 pb-8'>
         <div className={classes.particlesBackgroundWrapper}>
           <Particles options={particlesjsConfig} style={particlesStyle} />
         </div>

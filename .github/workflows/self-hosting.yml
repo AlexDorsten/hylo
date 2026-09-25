@@ -62,6 +62,8 @@ jobs:
             exit 1
           fi
           grep -q 'Refusing bootstrap: application relations already exist' /tmp/bootstrap-retry.log
+      - name: Verify external identity migration and concurrent callbacks
+        run: docker compose run --rm --no-deps -e HYLO_SELF_HOSTING_INTEGRATION=1 maintenance node --test /app/test/self-hosting/oidc-storage.integration.cjs
       - name: Verify update command after initial installation
         run: docker compose run --rm --no-deps maintenance
       - name: Tear down disposable CI data

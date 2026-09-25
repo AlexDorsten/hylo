@@ -29,8 +29,25 @@ module.exports.policies = {
     '*': true
   },
 
+  ExternalOidcController: {
+    capabilities: true,
+    start: true,
+    callback: true,
+    link: 'sessionAuth'
+  },
+
   SessionController: {
     createWithJWT: ['checkJWT'],
+    startGoogleOAuth: 'enabledLoginProvider',
+    finishGoogleOAuth: 'enabledLoginProvider',
+    finishGoogleTokenOAuth: 'enabledLoginProvider',
+    startLinkedinOAuth: 'enabledLoginProvider',
+    finishLinkedinOAuth: 'enabledLoginProvider',
+    finishLinkedinTokenOAuth: 'enabledLoginProvider',
+    startFacebookOAuth: 'enabledLoginProvider',
+    finishFacebookOAuth: 'enabledLoginProvider',
+    finishFacebookTokenOAuth: 'enabledLoginProvider',
+
     '*': true
   },
 

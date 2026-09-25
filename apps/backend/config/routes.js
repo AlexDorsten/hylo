@@ -29,6 +29,11 @@ module.exports.routes = {
   'GET    /noo/hook/batchCommentForm':                    'CommentController.createBatchFromEmailForm',
   'POST   /noo/hook/batchCommentForm':                    'CommentController.createBatchFromEmailForm',
 
+  'GET    /noo/auth/providers':                          'ExternalOidcController.capabilities',
+  'GET    /noo/login/oidc/:providerId':                   'ExternalOidcController.start',
+  'GET    /noo/login/oidc/:providerId/callback':          'ExternalOidcController.callback',
+  'POST   /noo/login/oidc/:providerId/link':             'ExternalOidcController.link',
+
   'POST   /noo/login':                                    'SessionController.create',
   'POST   /noo/login/native':                             'SessionController.nativeLogin',
   'POST   /noo/session/from-token':                       'SessionController.fromToken',
