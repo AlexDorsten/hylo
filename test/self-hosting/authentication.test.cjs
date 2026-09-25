@@ -53,3 +53,20 @@ test('Passport loads with no social credentials and registers only configured st
     assert.deepEqual(registered.sort(), enabled ? ['google', 'google-token', 'jwt', 'linkedin', 'linkedin-token'] : ['jwt'])
   }
 })
+
+test('legacy social routes reject unavailable providers before authentication', () => {
+  const loadBackend = require('./helpers/load-backend.cjs')
+  for (const enabled of [false, true]) {
+    const policy = loadBackend('api/policies/enabledLoginProvider.js', {
+      mocks: { '../../lib/authentication.cjs': { configuration: () => ({ google: enabled, linkedin: enabled }) } }
+    })
+    for (const provider of ['google', 'google-token', 'linkedin', 'linkedin-token', 'facebook', 'apple']) {
+      let allowed = false
+      let denied = false
+      policy({ path: '/noo/login/' + provider + '/oauth' }, { notFound: () => { denied = true } }, () => { allowed = true })
+      const expected = enabled && ['google', 'google-token', 'linkedin', 'linkedin-token'].includes(provider)
+      assert.equal(allowed, expected)
+      assert.equal(denied, !expected)
+    }
+  }
+})

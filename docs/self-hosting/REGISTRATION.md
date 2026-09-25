@@ -41,6 +41,8 @@ When disabled:
 login providers. To offer only email/password and community OIDC, leave Google
 and LinkedIn credentials unset and configure the desired providers as described
 in [OIDC.md](OIDC.md).
+The legacy Facebook and native Apple handlers are unavailable in this server
+configuration; they cannot bypass the configured provider list.
 
 Keep registration enabled only while deliberately admitting new local accounts,
 under appropriate access restrictions. Complete [first-operator setup](FIRST_OPERATOR.md)

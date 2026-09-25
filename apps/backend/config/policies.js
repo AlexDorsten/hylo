@@ -52,6 +52,7 @@ module.exports.policies = {
     startFacebookOAuth: 'enabledLoginProvider',
     finishFacebookOAuth: 'enabledLoginProvider',
     finishFacebookTokenOAuth: 'enabledLoginProvider',
+    finishAppleOAuth: 'enabledLoginProvider',
 
     '*': true
   },

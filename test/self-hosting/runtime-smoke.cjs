@@ -18,6 +18,12 @@ async function main () {
   const providers = await (await fetch(origin + '/noo/auth/providers')).json()
   assert.equal(providers.registration, false)
   assert.equal(providers.password, true)
+  for (const path of ['google', 'linkedin', 'facebook', 'apple/oauth']) {
+    const response = await fetch(origin + '/noo/login/' + path, {
+      method: path === 'apple/oauth' ? 'POST' : 'GET', redirect: 'manual'
+    })
+    assert.equal(response.status, 404, 'Unconfigured social login must be disabled: ' + path)
+  }
   for (const mutation of [
     'sendEmailVerification(email: "closed-registration@example.org") { success error }',
     'verifyEmail(email: "closed-registration@example.org", code: "123456") { error }',
