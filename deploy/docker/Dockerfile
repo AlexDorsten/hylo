@@ -18,7 +18,9 @@ ARG VITE_FILESTACK_API_KEY=
 ARG VITE_MAPBOX_TOKEN=
 ARG VITE_STRIPE_CLIENT_ID=
 ENV VITE_API_HOST=${PUBLIC_ORIGIN} VITE_SOCKET_HOST=${PUBLIC_ORIGIN}
-RUN yarn workspace web build
+# Vite's large bundle needs more than Node's default heap under amd64 emulation.
+# Keep this allowance scoped to the build; runtime limits are set by the operator.
+RUN NODE_OPTIONS=--max-old-space-size=4096 yarn workspace web build
 
 FROM ${NODE_IMAGE} AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
