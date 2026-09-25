@@ -3,10 +3,12 @@ import request from 'request'
 import { Validators } from '@hylo/shared'
 import { decodeHyloJWT } from '../../../lib/HyloJWT'
 import sentry from '../../../lib/sentry'
+import { registrationEnabled } from '../../../lib/authentication.cjs'
 
 // Sign-up Related
 
 export const sendEmailVerification = async (_, { email }) => {
+  if (!registrationEnabled(process.env)) return { success: false, error: 'REGISTRATION_DISABLED' }
   try {
     let user = await User.find(email, {}, false)
 
@@ -34,6 +36,7 @@ export const sendEmailVerification = async (_, { email }) => {
 }
 
 export const verifyEmail = (fetchOne) => async (_, { email: providedEmail, code: providedCode, token }, context) => {
+  if (!registrationEnabled(process.env)) return { error: 'REGISTRATION_DISABLED' }
   try {
     const decodedToken = token && decodeHyloJWT(token)
     const email = decodedToken?.sub || providedEmail
@@ -60,6 +63,7 @@ export const verifyEmail = (fetchOne) => async (_, { email: providedEmail, code:
 }
 
 export const register = (fetchOne) => async (_, { name, password }, context) => {
+  if (!registrationEnabled(process.env)) return { error: 'REGISTRATION_DISABLED' }
   try {
     const user = await User.find(context.currentUserId, {}, false)
 

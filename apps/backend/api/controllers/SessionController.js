@@ -4,6 +4,7 @@ import crypto from 'crypto'
 import { Validators } from '@hylo/shared'
 import OIDCAdapter from '../services/oidc/KnexAdapter'
 import { mintTokensForUser } from '../services/OIDCTokens'
+import { registrationEnabled } from '../../lib/authentication.cjs'
 
 const sentry = require('../../lib/sentry')
 
@@ -66,6 +67,11 @@ const ensureUserNameFromProfile = async (user, profile) => {
 const upsertUser = (req, service, profile, { tokenAuth = false } = {}) => {
   return findUser(service, profile.email, profile.id)
   .then(async (user) => {
+    // An unfinished email/API signup must not become a new account through OAuth.
+    // Completed, self-deactivated accounts retain their normal login behavior.
+    if (!registrationEnabled(process.env) && (!user || !user.relations.linkedAccounts.length)) {
+      throw new Error('REGISTRATION_DISABLED')
+    }
     if (user) {
       await ensureUserNameFromProfile(user, profile)
       if (tokenAuth) {

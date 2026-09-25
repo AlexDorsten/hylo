@@ -1,4 +1,11 @@
 // One server-side source for strategy registration, routes and browser controls.
+function registrationEnabled (env = process.env) {
+  const value = env.HYLO_REGISTRATION_ENABLED
+  if (value === undefined || value === 'true') return true
+  if (value === 'false') return false
+  throw new Error('HYLO_REGISTRATION_ENABLED must be true or false')
+}
+
 function configuration (env = process.env) {
   const configured = (id, secret) => {
     if (!!env[id] !== !!env[secret]) throw new Error(`Configure both ${id} and ${secret}, or neither`)
@@ -29,6 +36,7 @@ function configuration (env = process.env) {
   }
   return {
     origin,
+    registration: registrationEnabled(env),
     google: configured('GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'),
     linkedin: configured('LINKEDIN_API_KEY', 'LINKEDIN_API_SECRET'),
     oidc: oidc.map(({ id, name, issuer, clientId, clientSecret, tokenEndpointAuthMethod }) => ({ id, name, issuer, clientId, clientSecret, tokenEndpointAuthMethod }))
@@ -36,7 +44,7 @@ function configuration (env = process.env) {
 }
 
 function capabilities (config = configuration()) {
-  return { password: true, google: config.google, oidc: config.oidc.map(({ id, name }) => ({ id, name, loginUrl: `/noo/login/oidc/${id}` })) }
+  return { password: true, registration: config.registration, google: config.google, oidc: config.oidc.map(({ id, name }) => ({ id, name, loginUrl: `/noo/login/oidc/${id}` })) }
 }
 
 function explicitId (value, list) {
@@ -44,4 +52,4 @@ function explicitId (value, list) {
   return /^[1-9][0-9]*$/.test(id) && (list || '').split(',').some(entry => entry.trim() === id)
 }
 
-module.exports = { configuration, capabilities, explicitId }
+module.exports = { configuration, capabilities, explicitId, registrationEnabled }

@@ -4,10 +4,12 @@ import InvitationService from '../services/InvitationService'
 import OIDCAdapter from '../services/oidc/KnexAdapter'
 import { decodeHyloJWT } from '../../lib/HyloJWT'
 import { joinRoom, leaveRoom } from '../services/Websockets'
+import { registrationEnabled } from '../../lib/authentication.cjs'
 
 module.exports = {
 
   create: async function (req, res) {
+    if (!registrationEnabled(process.env)) return res.status(403).json({ error: 'REGISTRATION_DISABLED' })
     const { name, email, groupId, isAdministrator, isCoordinator } = req.allParams()
     const group = groupId && await Group.find(groupId)
     const assignAdministrator = [isAdministrator, isCoordinator].some(value => value === true || value === 'true')

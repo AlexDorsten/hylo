@@ -47,3 +47,9 @@ closing issue #3. New password-reset links use the dedicated single-use flow
 described in [SMTP account delivery](SMTP.md#password-recovery). Verify recovery
 through the actual pilot's inbox and browser before accepting issue #4. This
 procedure does not establish production readiness.
+
+## Registration policy
+
+After completing the initial operator account, self-registration can be disabled
+with `HYLO_REGISTRATION_ENABLED=false`. Existing password and community login remain
+available. See [the registration policy guide](REGISTRATION.md) for scope and restart steps.

@@ -5,7 +5,7 @@ const provider = { id: 'community', name: 'Community', issuer: 'https://id.examp
 const environment = p => ({ PROTOCOL: 'https', DOMAIN: 'hylo.example.org', HYLO_OIDC_PROVIDERS: JSON.stringify(p) })
 
 test('local login needs no Google, LinkedIn or external OIDC credentials', () => {
-  assert.deepEqual(capabilities(configuration({})), { password: true, google: false, oidc: [] })
+  assert.deepEqual(capabilities(configuration({})), { password: true, registration: true, google: false, oidc: [] })
   assert.throws(() => configuration({ GOOGLE_CLIENT_ID: 'partial' }))
   assert.throws(() => configuration({ LINKEDIN_API_SECRET: 'partial' }))
   assert.equal(configuration({ GOOGLE_CLIENT_ID: 'client', GOOGLE_CLIENT_SECRET: 'secret' }).google, true)
@@ -13,7 +13,7 @@ test('local login needs no Google, LinkedIn or external OIDC credentials', () =>
 
 test('public capabilities expose only labels and local login URLs', () => {
   assert.deepEqual(capabilities(configuration(environment([provider]))), {
-    password: true, google: false, oidc: [{ id: 'community', name: 'Community', loginUrl: '/noo/login/oidc/community' }]
+    password: true, registration: true, google: false, oidc: [{ id: 'community', name: 'Community', loginUrl: '/noo/login/oidc/community' }]
   })
 })
 

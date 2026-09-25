@@ -45,6 +45,7 @@ jobs:
           file = pathlib.Path('backend.env')
           key = subprocess.check_output(['openssl', 'genrsa', '-traditional', '2048'], stderr=subprocess.DEVNULL)
           content = file.read_text().replace('OIDC_KEYS=\n', 'OIDC_KEYS=' + base64.b64encode(key).decode() + '\n')
+          content = content.replace('HYLO_REGISTRATION_ENABLED=true', 'HYLO_REGISTRATION_ENABLED=false')
           # This startup check must not send external mail. SMTP has a local sink test.
           content = content.replace('EMAIL_PROVIDER=smtp', 'EMAIL_PROVIDER=none')
           file.write_text(content)

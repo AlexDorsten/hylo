@@ -15,6 +15,25 @@ async function main () {
     await delay(2000)
   }
   assert.deepEqual(capabilities, { payments: false }, 'API must become ready with disabled payments')
+  const providers = await (await fetch(origin + '/noo/auth/providers')).json()
+  assert.equal(providers.registration, false)
+  assert.equal(providers.password, true)
+  for (const mutation of [
+    'sendEmailVerification(email: "closed-registration@example.org") { success error }',
+    'verifyEmail(email: "closed-registration@example.org", code: "123456") { error }',
+    'verifyEmail(email: "closed-registration@example.org", token: "old-registration-link") { error }',
+    'register(name: "Closed Registration", password: "fixture-password") { error }'
+  ]) {
+    const response = await fetch(origin + '/noo/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: `mutation { ${mutation} }` })
+    })
+    const result = await response.json()
+    assert.equal(response.status, 200)
+    assert.equal(result.errors, undefined, JSON.stringify(result.errors))
+    assert.equal(Object.values(result.data)[0].error, 'REGISTRATION_DISABLED')
+  }
   const recovery = await fetch(origin + '/noo/password-reset', { headers: { 'Accept-Language': 'de' } })
   assert.equal(recovery.status, 200)
   assert.equal(recovery.headers.get('cache-control'), 'no-store')
@@ -38,7 +57,7 @@ async function main () {
   assert.equal(result.errors.length, 1)
   assert.equal(result.errors[0].message, 'Payments are disabled on this instance')
   assert.equal(result.errors[0].extensions.code, 'PAYMENTS_DISABLED')
-  console.log('API, recovery routes, capabilities, non-payment GraphQL and payment rejection passed without Stripe credentials')
+  console.log('API, closed registration, recovery routes, capabilities, non-payment GraphQL and payment rejection passed without Stripe credentials')
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1 })

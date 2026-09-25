@@ -38,3 +38,16 @@ submission hides and clears the form without logging in. The stored bcrypt
 credential accepts the new password and rejects the old one after submission.
 No real mail, user account, provider or operator configuration is used. These
 screenshots do not establish deployment or external-inbox acceptance.
+
+## Closed registration
+
+`registration-disabled-login.png` shows the production web build in local Chrome
+with German locale and synthetic capabilities (`registration: false`, password
+login and one generic Community Login provider). There is no signup entry point.
+Four direct signup URLs, including an old verification link, redirect to login
+without submitting a registration mutation. Recovery retains its email form and
+hides signup. A capabilities HTTP 503 also leaves local login available and
+registration closed; changing the response to `registration: true` restores the
+signup link and form. Optional cookies were declined and external requests were
+blocked. This checks browser behavior with intercepted API responses; backend
+guards are covered by the separate Node and container HTTP checks.

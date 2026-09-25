@@ -276,3 +276,9 @@ Check the workflow result for the exact revision before using the artifacts.
 References: [PostGIS image](https://github.com/postgis/docker-postgis),
 [Compose startup order](https://docs.docker.com/compose/how-tos/startup-order/),
 [Caddy reverse proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy).
+
+## Registration policy
+
+After completing the initial operator account, self-registration can be disabled
+with `HYLO_REGISTRATION_ENABLED=false`. Existing password and community login remain
+available. See [the registration policy guide](REGISTRATION.md) for scope and restart steps.

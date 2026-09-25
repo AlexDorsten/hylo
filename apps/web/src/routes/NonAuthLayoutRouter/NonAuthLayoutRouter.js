@@ -11,6 +11,7 @@ import { getAuthenticated } from 'store/selectors/getSignupState'
 import particlesjsConfig from './particlesjsConfig'
 import LocaleDropdown from 'routes/AuthLayoutRouter/components/GlobalNav/LocaleDropdown/LocaleDropdown'
 import useAppearance from 'hooks/useAppearance'
+import useAuthProviders from 'hooks/useAuthProviders'
 import Button from 'components/ui/button'
 import JoinGroup from 'routes/JoinGroup'
 import Login from 'routes/NonAuthLayoutRouter/Login'
@@ -35,6 +36,7 @@ export default function NonAuthLayoutRouter (props) {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const isAuthenticated = useSelector(getAuthenticated)
+  const { registration } = useAuthProviders()
   const returnToPathFromQueryString = getQuerystringParam('returnToUrl', location)
   const returnToNavigationState = props.location?.state?.from
   const returnToPath = returnToNavigationState
@@ -54,10 +56,10 @@ export default function NonAuthLayoutRouter (props) {
       dispatch(setReturnToPath(returnToPath))
     }
 
-    if (isAuthenticated) {
+    if (isAuthenticated && registration) {
       navigate('/signup', { replace: true })
     }
-  }, [dispatch, setReturnToPath, returnToPath])
+  }, [dispatch, setReturnToPath, returnToPath, isAuthenticated, registration])
 
   return (
     <Div100vh className='w-full h-full overflow-y-auto'>
@@ -136,10 +138,14 @@ export default function NonAuthLayoutRouter (props) {
             element={
               <div className='bg-midground rounded-md w-full max-w-[320px] mx-auto p-4 mt-4 text-center'>
                 <div className='flex items-center justify-center gap-2'>
-                  <Link tabIndex={-1} to='/signup' className='text-foreground'>
-                    <Button variant='outline'>{t('Sign up')}</Button>
-                  </Link>
-                  or
+                  {registration && (
+                    <>
+                      <Link tabIndex={-1} to='/signup' className='text-foreground'>
+                        <Button variant='outline'>{t('Sign up')}</Button>
+                      </Link>
+                      or
+                    </>
+                  )}
                   <Link to='/login' className='text-foreground'>
                     <Button variant='outline'>{t('Sign in')}</Button>
                   </Link>
@@ -149,13 +155,13 @@ export default function NonAuthLayoutRouter (props) {
           />
           <Route
             path='/login'
-            element={
+            element={registration && (
               <div className='bg-midground rounded-md w-full max-w-[320px] mx-auto p-4 mt-4 text-sm'>
                 <Link className='flex items-center justify-between gap-2 text-foreground' tabIndex={-1} to='/signup'>
                   {t('Not a member of Hylo?')} <Button variant='outline'>{t('Sign Up')}</Button>
                 </Link>
               </div>
-            }
+            )}
           />
         </Routes>
         <div className='bg-midground rounded-md w-full max-w-[320px] mx-auto p-4 mt-4 text-center'>
