@@ -23,13 +23,17 @@ RUN yarn workspace web build
 FROM ${NODE_IMAGE} AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
-RUN corepack enable && corepack prepare yarn@4.9.2 --activate
-ENV NODE_ENV=production
+ENV COREPACK_HOME=/opt/corepack
+RUN corepack enable && corepack prepare yarn@4.9.2 --activate \
+    && chmod -R a+rX /opt/corepack
+ENV NODE_ENV=production COREPACK_ENABLE_NETWORK=0
 WORKDIR /app
 # Backend runtime uses Babel and other packages currently in devDependencies.
 # Do not prune them until the upstream dependency layout supports it.
 COPY --from=build --chown=node:node /app /app
 USER node
 WORKDIR /app/apps/backend
+# Verify the unprivileged runtime can use the bundled Yarn without a download.
+RUN --network=none test "$(yarn --version)" = 4.9.2
 EXPOSE 3001 9001
 CMD ["node", "--optimize_for_size", "--gc_interval=100", "app.js"]

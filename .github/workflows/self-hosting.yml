@@ -54,6 +54,8 @@ jobs:
         run: |
           test "$(docker compose exec -T db psql -U postgres -d hylo -Atc "SELECT rolsuper FROM pg_roles WHERE rolname = 'hylo'")" = f
           test "$(docker compose exec -T db psql -U postgres -d hylo -Atc 'SELECT count(*) FROM users')" -gt 0
+          test "$(docker compose exec -T db psql -U postgres -d hylo -Atc 'SELECT count(*) FROM groups_posts')" -gt 0
+          test "$(docker compose exec -T db psql -U postgres -d hylo -Atc 'SELECT count(*) FROM tags')" -gt 0
           test "$(docker compose exec -T db psql -U postgres -d hylo -Atc 'SELECT count(*) FROM knex_migrations')" -gt 0
           if docker compose run --rm --no-deps maintenance node /app/deploy/docker/bootstrap.cjs > /tmp/bootstrap-retry.log 2>&1; then
             echo 'ERROR: repeated bootstrap unexpectedly succeeded'

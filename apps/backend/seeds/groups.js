@@ -142,6 +142,6 @@ exports.seed = function (knex, Promise) {
       await knex.raw('ALTER SEQUENCE post_seq RESTART WITH 1')
       await knex('posts').insert(initialPost)
 
-      return knex('groups_posts').insert({ group_id: 1, post_id: 1, active: true })
+      return knex('groups_posts').insert({ group_id: 1, post_id: 1 })
     })
 }
