@@ -21,6 +21,10 @@ export async function canDeleteComment (userId, comment) {
 }
 
 export async function canUpdateComment (userId, comment) {
+  const post = comment && await Post.find(comment.get('post_id'))
+  if (!post || (post.get('type') === Post.Type.DISCUSSION && !await Post.isVisibleToUser(post.id, userId))) {
+    throw new GraphQLError("You don't have permission to edit this comment")
+  }
   if (comment.get('user_id') === userId) {
     return true
   } else {
@@ -120,6 +124,10 @@ export async function validateCommentCreateData (userId, data) {
   const isVisible = await Post.isVisibleToUser(data.postId, userId)
 
   if (isVisible) {
+    if (data.parentCommentId) {
+      const parentComment = await Comment.where({ id: data.parentCommentId, post_id: data.postId, active: true }).fetch()
+      if (!parentComment) throw new GraphQLError('parent comment not found')
+    }
     if (!data.imageUrl && !trim(data.text) && isEmpty(data.attachments)) {
       throw new GraphQLError("Can't create a blank comment")
     }

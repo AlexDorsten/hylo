@@ -39,10 +39,20 @@ post. They are not fields on the general `Post` type, are not added to search or
 subscription payloads, and do not appear in public metadata. This is an explicit
 first-increment boundary; public guest access needs a separate policy.
 
-The broader #14 access criterion remains open: existing post/comment read, write,
-search and socket paths need their own revocation review. Their legacy permission
-helpers differ from the new overview checks. Passing these new endpoint tests is
-not evidence that every existing Hylo content channel meets the release criteria.
+The ordinary post/comment paths now also reject a former member's retained follow
+as permission to read, reply to or edit a private discussion. Direct GraphQL reads
+and anonymous comment reads check post visibility. Replies must reference an active
+parent in the same post; old malformed cross-post links do not reveal the parent.
+Full-text search intersects requested group IDs with current membership rather
+than treating the requested scope as permission. GraphQL comment and typing
+subscriptions check access before opening a channel and again for each event;
+post events on `postUpdates` and `allUpdates` also recheck current access.
+
+The broader #14 access criterion remains open. Legacy Socket.IO rooms and their
+existing subscribers, notifications, remaining mutations and inherited-moderator
+policy alignment still need review. The GraphQL SSE checks do not protect those
+separate channels. Passing the covered endpoint tests is not evidence that every
+existing Hylo content channel meets the release criteria.
 Native mobile clients, full assistive-technology testing and production integration
 are also not claimed by this change.
 
@@ -55,7 +65,7 @@ creates and drops that database. Never point it at a populated installation.
 With the repository's test PostgreSQL/PostGIS, Redis, Node 24 and Yarn 4 setup:
 
 ```sh
-yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js test/unit/graphql/Discussions.test.js --timeout 10000
+yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js test/unit/graphql/Discussions.test.js test/unit/graphql/DiscussionAccess.test.js --timeout 10000
 yarn workspace web test --watchAll=false --runInBand --runTestsByPath src/components/PostEditor/PostEditor.test.js src/components/DiscussionOverview/DiscussionOverview.test.js src/routes/PostDetail/PostDetail.test.js src/routes/PostDetail/Comments/CommentForm/CommentForm.test.js
 yarn workspace web test:e2e:isolated authenticated.discussion-overview.spec.js --project=chromium --project=mobile-chrome
 yarn workspace web build
@@ -64,14 +74,27 @@ yarn workspace web build
 The focused backend tests cover real PostgreSQL persistence, legacy content and
 attachment preservation, moderator attribution, revoked users and inherited roles,
 simultaneous edits, history pagination, GraphQL permissions and migration up/down.
+Access regression tests exercise the actual GraphQL schema and full-text index,
+retained follows, scoped search, cross-post parent links and subscription streams
+before and after membership revocation. Public discussions and private message
+participants have positive regression coverage too.
+The focused CI selection passes 32 tests. An additional 36 existing post-visibility,
+search, message-search and inbound-comment tests passed, with one pre-existing
+search skip. That legacy selection required Mocha's synchronous CommonJS loader;
+its default ESM import path conflicts with `mock-require` on the tested Node 24
+runtime. No test-runner dependency change is included here.
 Component tests cover rendering, editing, conflicts, request failures, history and
 revocation, as well as late comment-draft restoration, without replacing the
 server-side permission tests.
 
-The real-browser scenario creates two revisions as the author, reads history,
-switches all six locales, comments and replies as a late participant, follows a
-comment link, reloads, denies an outsider and removes a member's access. Desktop
-and phone-width layouts use the same database-backed flow. Screenshots below use
+Three independent browser scenarios cover author editing/history/locales,
+participant replies/direct links/revocation, and outsider denial. Each creates its
+own database-backed fixture. Splitting the previous serial scenario isolates
+failures and avoids sharing one timeout across all three workflows. All six
+desktop/mobile scenarios plus auth setup passed locally with eight configured
+workers; that does not replace the full CI suite. Secondary participant contexts
+use the project's mobile user agent and touch settings as well as viewport size.
+Screenshots below use
 the actual device width and a taller capture viewport to show the entire panel.
 
 ![Discussion overview and history on desktop](discussion-overview-desktop.png)
@@ -105,3 +128,6 @@ open-question extraction, reading guides and neutral option descriptions. None i
 implemented or sends data to a provider. Source selection, citations, provenance,
 access checks and explicit human review are prerequisites for a future assistant.
 Resistance values, votes and binding outcomes remain human decisions.
+The access review also identifies a future requirement: recheck source permission
+when gathering inputs, releasing a generated draft and opening it later. An
+existing subscription or search result must never serve as a permanent access grant.

@@ -27,3 +27,9 @@ AI must never cast votes, infer an individual's resistance, decide membership, s
 ## Current assessment: discussion overview
 
 The separately versioned summary and open questions provide a useful future review surface. A future assistant could propose changes to these fields while preserving the current `expectedVersion` conflict check. It still needs an explicit source-selection and citation model, provenance for assisted drafts, provider configuration and access-revocation tests. None of those exists yet; do not imply that the current editor is AI-assisted.
+
+## Current assessment: discussion access and revocation
+
+The access review found that a retained follow, a requested search group or a previously opened live channel could outlast actual membership. Those must never authorize a future assistant's sources. Explicitly selected, currently readable comments could help draft a source-linked summary or list unanswered questions; check each selected source again when collecting inputs, releasing a completed draft and opening or exporting it later. If access changes during generation, withhold the derived draft and require a fresh authorized selection. Removing a user from a group cannot erase information already received by that user or a provider.
+
+Human review must show the selected sources, their revisions, omissions and any access changes before publishing a normal overview revision. Test cross-post reply references, revoked access during generation, stale search results, deleted sources and citations to inaccessible contributions. The new GraphQL/search checks cover only the paths documented in the review notes; legacy Socket.IO and notification paths remain under review. No broad data connector, AI provider or automatic summary publication is introduced or authorized by this slice.

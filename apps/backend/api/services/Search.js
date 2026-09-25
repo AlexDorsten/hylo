@@ -262,8 +262,8 @@ module.exports = {
 }
 
 const fetchGroupAccess = (userId, { groupIds }) => {
-  if (groupIds && groupIds.length > 0) return Promise.resolve({ groupIds })
-  return Promise.resolve({ userId })
+  // A requested group narrows the search; it must never replace the viewer.
+  return Promise.resolve({ userId, groupIds })
 }
 
 const obfuscate = text => Buffer.from(text).toString('hex')

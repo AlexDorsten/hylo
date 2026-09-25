@@ -89,7 +89,8 @@ const applyMemberGroupFilter = (subquery, groupAccess) => {
   const { groupIds, userId } = groupAccess
   if (userId) {
     subquery.whereIn('group_id', Group.selectIdsForMember(userId))
-  } else if (groupIds && groupIds.length > 0) {
+  }
+  if (groupIds && groupIds.length > 0) {
     subquery.whereIn('group_id', groupIds)
   }
 }

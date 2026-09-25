@@ -1356,7 +1356,7 @@ export default function makeModels (userId, isAdmin, apiClient) {
       ],
       getters: {
         text: comment => comment.text(userId),
-        parentComment: (c) => c.parentComment().fetch(),
+        parentComment: c => commentFilter(userId)(c.parentComment().where('comments.post_id', c.get('post_id'))).fetch({ columns: ['comments.*'] }),
         myReactions: c => userId ? c.reactionsForUser(userId).fetch() : [],
         commentReactions: c => c.reactions().fetch() // XXX: for some reason this doesn't work as relationship alias, I dont know why
       },

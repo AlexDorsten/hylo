@@ -3,22 +3,25 @@ import DataLoader from 'dataloader'
 export const commentFilter = userId => relation => relation.query(q => {
   q.distinct()
   q.where({ 'comments.active': true })
+  // Anonymous reads need the same post visibility check as authenticated ones.
+  if (!q.queryContext()?.alreadyJoinedPosts) {
+    q.join('posts', 'comments.post_id', 'posts.id')
+  }
+  q.where('posts.active', true)
 
   if (userId) {
     q.leftJoin('groups_posts', 'comments.post_id', 'groups_posts.post_id')
-    // Only join posts if not already joined (e.g. by the User.comments relation)
-    if (!q.queryContext()?.alreadyJoinedPosts) {
-      q.join('posts', 'groups_posts.post_id', 'posts.id')
-    }
     q.whereNotIn('comments.user_id', BlockedUser.blockedFor(userId))
 
     q.where(q2 => {
       const followedPostIds = PostUser.followedPostIds(userId)
-      q2.whereIn('comments.post_id', followedPostIds)
+      q2.where(q3 => q3.whereIn('comments.post_id', followedPostIds).where('posts.type', '!=', Post.Type.DISCUSSION))
         .orWhereIn('groups_posts.group_id', Group.selectIdsForMember(userId))
         .orWhere('posts.is_public', true)
     })
     q.groupBy('comments.id')
+  } else {
+    q.where('posts.is_public', true)
   }
 })
 

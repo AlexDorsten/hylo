@@ -34,7 +34,7 @@ async function captureOverview (page, panel, path) {
   await page.setViewportSize(viewport)
 }
 
-test('discussion overview: author, late participant, outsider and revoked member', async ({ page, browser, baseURL }, testInfo) => {
+test('discussion overview: keyboard editing, history and all locales', async ({ page }, testInfo) => {
   test.skip(process.env.E2E_ISOLATED !== '1', 'Requires isolated synthetic data')
   const fixture = await seedDiscussion()
   const path = `/groups/${fixture.slug}/post/${fixture.postId}`
@@ -83,9 +83,36 @@ test('discussion overview: author, late participant, outsider and revoked member
     expect(await localizedPanel.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
     if (locale === 'de') await captureOverview(page, localizedPanel, testInfo.outputPath('discussion-overview-de.png'))
   }
+})
 
-  const memberContext = await browser.newContext({ baseURL, viewport: page.viewportSize(), storageState: { cookies: [], origins: [] } })
-  const outsiderContext = await browser.newContext({ baseURL, viewport: page.viewportSize(), storageState: { cookies: [], origins: [] } })
+async function prepareOverview (page, postId) {
+  const response = await page.request.post('/noo/graphql', {
+    data: {
+      query: `mutation($id: ID!) {
+        updateDiscussion(postId: $id, expectedVersion: 0, context: "Plan an accessible workshop.", summary: "Two accessible venues are being compared.", openQuestions: ["Which venue is accessible?"]) { current { version } }
+      }`,
+      variables: { id: postId }
+    }
+  })
+  const result = await response.json()
+  expect(result.errors).toBeUndefined()
+  expect(result.data.updateDiscussion.current.version).toBe(1)
+}
+
+async function participantContext (browser, baseURL, testInfo) {
+  // Preserve mobile UA, touch and viewport for secondary participants too.
+  const device = Object.fromEntries(['viewport', 'userAgent', 'isMobile', 'hasTouch', 'deviceScaleFactor']
+    .filter(key => testInfo.project.use[key] !== undefined)
+    .map(key => [key, testInfo.project.use[key]]))
+  return browser.newContext({ ...device, baseURL, storageState: { cookies: [], origins: [] } })
+}
+
+test('discussion overview: participant replies, direct links and revoked membership', async ({ page, browser, baseURL }, testInfo) => {
+  test.skip(process.env.E2E_ISOLATED !== '1', 'Requires isolated synthetic data')
+  const fixture = await seedDiscussion()
+  const path = `/groups/${fixture.slug}/post/${fixture.postId}`
+  await prepareOverview(page, fixture.postId)
+  const memberContext = await participantContext(browser, baseURL, testInfo)
   try {
     const member = await memberContext.newPage()
     await login(member, fixture.email)
@@ -126,6 +153,32 @@ test('discussion overview: author, late participant, outsider and revoked member
     await member.reload()
     await expect(member.getByText('I can ask the librarian about available dates.', { exact: true })).toBeVisible(uiTimeout)
 
+    await revokeDiscussionMember(fixture)
+    const revoked = await readPrivateOverview(member, fixture.postId)
+    expect(revoked.data).toEqual({ discussionOverview: null, discussionHistory: null })
+    await member.evaluate(() => window.dispatchEvent(new Event('focus')))
+    await expect(memberPanel).toHaveCount(0, uiTimeout)
+    await member.reload()
+    await expect(memberPanel).toHaveCount(0)
+    const access = await member.request.post('/noo/graphql', {
+      data: { query: 'query($post: ID!, $comment: ID!) { post(id: $post) { id details } comment(id: $comment) { id text } }', variables: { post: fixture.postId, comment: commentId } }
+    })
+    const deniedContent = await access.json()
+    expect(deniedContent.errors).toBeUndefined()
+    expect(deniedContent.data).toEqual({ post: null, comment: null })
+    await expect(member.getByText('The library has step-free access.', { exact: true })).toHaveCount(0)
+    await expect(member.getByText('I can ask the librarian about available dates.', { exact: true })).toHaveCount(0)
+  } finally {
+    await memberContext.close()
+  }
+})
+
+test('discussion overview: outsider cannot read private content by direct URL', async ({ page, browser, baseURL }, testInfo) => {
+  test.skip(process.env.E2E_ISOLATED !== '1', 'Requires isolated synthetic data')
+  const fixture = await seedDiscussion()
+  await prepareOverview(page, fixture.postId)
+  const outsiderContext = await participantContext(browser, baseURL, testInfo)
+  try {
     const outsider = await outsiderContext.newPage()
     await login(outsider, 'e2e.nogroups@hylo.test')
     const denied = await readPrivateOverview(outsider, fixture.postId)
@@ -135,15 +188,7 @@ test('discussion overview: author, late participant, outsider and revoked member
     await waitPastRootSessionLoading(outsider)
     await expect(outsider.getByText('Two accessible venues are being compared.')).toHaveCount(0)
     await expect(outsider.getByText('Original workshop context.', { exact: false })).toHaveCount(0)
-
-    await revokeDiscussionMember(fixture)
-    const revoked = await readPrivateOverview(member, fixture.postId)
-    expect(revoked.data).toEqual({ discussionOverview: null, discussionHistory: null })
-    await member.evaluate(() => window.dispatchEvent(new Event('focus')))
-    await expect(memberPanel).toHaveCount(0, uiTimeout)
-    await member.reload()
-    await expect(memberPanel).toHaveCount(0)
   } finally {
-    await Promise.allSettled([memberContext.close(), outsiderContext.close()])
+    await outsiderContext.close()
   }
 })

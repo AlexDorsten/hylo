@@ -2,7 +2,7 @@
 
 import data from '@emoji-mart/data'
 import { init, getEmojiDataFromNative } from 'emoji-mart'
-import { difference, filter, get, omitBy, uniq, uniqBy, isEmpty, intersection, isUndefined, pick } from 'lodash/fp'
+import { difference, filter, get, omitBy, uniq, uniqBy, isEmpty, isUndefined, pick } from 'lodash/fp'
 import { DateTime } from 'luxon'
 import format from 'pg-format'
 import { flatten, sortBy } from 'lodash'
@@ -944,16 +944,20 @@ module.exports = bookshelf.Model.extend(Object.assign({
   },
 
   isVisibleToUser: async function (postId, userId) {
-    if (!postId || !userId) return Promise.resolve(false)
+    if (!/^\d+$/.test(String(postId)) || !userId) return false
     const post = await Post.find(postId)
+    if (!post) return false
+    if (post.get('type') === Post.Type.DISCUSSION && !await User.where({ id: userId, active: true }).fetch()) return false
     if (post.isPublic()) return true
 
-    const postGroupIds = await PostMembership.query()
-      .where({ post_id: postId }).pluck('group_id')
-    const userGroupIds = await Group.pluckIdsForMember(userId)
-
-    if (intersection(postGroupIds, userGroupIds).length > 0) return true
-    if (await post.isFollowed(userId)) return true
+    const membership = await bookshelf.knex('groups_posts')
+      .where('post_id', postId)
+      .whereIn('group_id', Group.selectIdsForMember(userId))
+      .first()
+    if (membership) return true
+    // Following is a notification preference, not continuing membership of a
+    // private discussion. Message threads retain their participant semantics.
+    if (post.get('type') !== Post.Type.DISCUSSION && await post.isFollowed(userId)) return true
 
     return false
   },
