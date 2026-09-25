@@ -1,3 +1,4 @@
+import { accessibleActivityIds, assertDiscussionPermission, canModerateDiscussion } from '../../../lib/discussionAccess'
 import { GraphQLError } from 'graphql'
 import { isEmpty, mapKeys, pick, snakeCase, size, trim } from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
@@ -291,12 +292,10 @@ export async function updateTopicFollow (userId, { id, data }) {
   return tagFollow.save(whitelist)
 }
 
-export function markActivityRead (userId, activityid) {
-  return Activity.find(activityid)
-    .then(a => {
-      if (a.get('reader_id') !== userId) return
-      return a.save({ unread: false })
-    })
+export async function markActivityRead (userId, activityId) {
+  const activity = await Activity.where({ id: activityId })
+    .query(q => q.whereIn('activities.id', accessibleActivityIds(userId))).fetch()
+  return activity ? activity.save({ unread: false }) : null
 }
 
 export function markAllActivitiesRead (userId) {
@@ -504,6 +503,12 @@ export function reactOn (userId, entityId, data, context) {
   }
   return lookUp[entityType].find(entityId)
     .then(async entity => {
+      if (!entity || !entity.get('active')) throw new GraphQLError('Content not found')
+      if (entityType === 'post' || entity.get('post_id')) {
+        const post = entityType === 'post' ? entity : await Post.find(entity.get('post_id'))
+        if (!post) throw new GraphQLError('Content not found')
+        await assertDiscussionPermission(userId, post)
+      }
       const result = await entity.addReaction(userId, data.emojiFull)
 
       // Note subscriptions for reactions on posts are handled by the postUpdates subscription
@@ -543,6 +548,12 @@ export function deleteReaction (userId, entityId, data, context) {
   }
   return lookUp[entityType].find(entityId)
     .then(async entity => {
+      if (!entity || !entity.get('active')) throw new GraphQLError('Content not found')
+      if (entityType === 'post' || entity.get('post_id')) {
+        const post = entityType === 'post' ? entity : await Post.find(entity.get('post_id'))
+        if (!post) throw new GraphQLError('Content not found')
+        await assertDiscussionPermission(userId, post)
+      }
       const result = await entity.deleteReaction(userId, data.emojiFull)
 
       // Note subscriptions for reactions on posts are handled by the postUpdates subscription
@@ -576,8 +587,9 @@ export async function removePost (userId, postId, groupIdOrSlug) {
   return Promise.join(
     Post.find(postId),
     GroupMembership.hasResponsibility(userId, group, Responsibility.constants.RESP_MANAGE_CONTENT),
-    (post, isModerator) => {
+    async (post, isModerator) => {
       if (!post) throw new GraphQLError(`Couldn't find post with id ${postId}`)
+      if (post.get('type') === Post.Type.DISCUSSION) isModerator = await canModerateDiscussion(userId, postId, group.id)
       if (!isModerator) throw new GraphQLError('You don\'t have permission to remove this post')
       return post.removeFromGroup(groupIdOrSlug)
     })

@@ -1,4 +1,10 @@
-# Hylo - Claude Code Project Guide
+# Hylo Community Fork — Project Guide
+
+## Fork boundaries
+
+- Work in `AlexDorsten/hylo`; upstream is a reference, not a publishing target.
+- Public code, issues, PRs, fixtures and screenshots must contain only generic deployment examples and synthetic data. Keep operator infrastructure, domains, accounts, credentials and unrelated services out of this repository.
+- For every community feature, assess where optional AI assistance could help and record the result in `docs/community/ai-assistance.md`. Describe the task, permitted input, human review and failure cases. An opportunity assessment does not authorize adding an AI provider or transmitting community data.
 
 ## Project Structure
 
@@ -8,6 +14,20 @@ Monorepo with Yarn workspaces:
 - `apps/backend` — Node.js API server (port 3001)
 - `apps/desktop` — Electron desktop app
 - `packages/` — Shared packages (`shared`, `graphql`, `hooks`, `contexts`, `presenters`, `navigation`, `urql`)
+
+## Agent skills
+
+### Issue tracker
+
+Use GitHub Issues in `AlexDorsten/hylo`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Reuse the existing `agent-ready` and `wontfix` labels; other triage roles have no configured label yet. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Community domain context lives in `docs/community/`; accepted architecture is recorded in `docs/adr/`. No root context map exists yet. See `docs/agents/domain.md`.
 
 ## Common Commands
 
@@ -36,9 +56,9 @@ cd apps/web && yarn build
 
 ## GitHub
 
-- Repo: `Hylozoic/hylo`
+- Repo: `AlexDorsten/hylo`
 - Main branch: `dev`
-- Issues: `gh issue list --repo Hylozoic/hylo`
+- Issues: `gh issue list --repo AlexDorsten/hylo`
 - PRs target `dev` branch
 
 ## Workflow: Ticket to PR
@@ -47,15 +67,15 @@ When picking up and completing work autonomously, follow this process:
 
 ### 1. Find a ticket
 ```bash
-gh issue list --repo Hylozoic/hylo --label "agent-ready" --limit 10
-gh issue view <number> --repo Hylozoic/hylo
+gh issue list --repo AlexDorsten/hylo --label "agent-ready" --limit 10
+gh issue view <number> --repo AlexDorsten/hylo
 ```
 
 ### 2. Create a branch
 ```bash
 git checkout dev
 git pull origin dev
-git checkout -b <issue-number>-short-description
+git checkout -b codex/<issue-number>-short-description
 ```
 
 ### 3. Implement the changes
@@ -90,17 +110,13 @@ cd apps/web && yarn build
 
 ### 5. Create the PR
 - PRs target `dev` branch
-- Link the issue in the PR body (`Closes #NUMBER`)
+- Link issues with `Related to #NUMBER` for partial work, or `Closes #NUMBER` after all acceptance criteria pass
 - Include Playwright screenshots for visual/UI changes
 - Include a test plan describing what was verified
 
-**Uploading screenshots to PRs:**
-```bash
-# Upload to the persistent draft release
-gh release upload "untagged-5c3bf358d6724b65a174" screenshot.png --repo Hylozoic/hylo --clobber
-# Embed in PR body
-# ![description](https://github.com/Hylozoic/hylo/releases/download/untagged-5c3bf358d6724b65a174/screenshot.png)
-```
+Attach only relevant, sanitized evidence to the fork PR. Do not reuse an upstream release or publish operator infrastructure details in screenshots or logs.
+
+**Screenshots:** Use isolated synthetic fixtures, inspect images for private data, and store review evidence under `docs/community/review/`. Link to the fork's committed images in the PR.
 
 ## Autonomous Agent Workflow
 
@@ -151,3 +167,9 @@ Or use the package.json scripts: `yarn test:e2e`, `yarn screenshot`
 
 ## Web App Guidelines
 - When adding new strings always translate them to the different languages in public/locales
+
+## Agent skills
+
+- Issue tracker: [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md)
+- Triage labels: [docs/agents/triage-labels.md](docs/agents/triage-labels.md)
+- Domain references: [docs/agents/domain.md](docs/agents/domain.md)

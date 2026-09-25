@@ -10,10 +10,12 @@ import checkLogin from 'store/actions/checkLogin'
 import { sendEmailVerification as sendEmailVerificationAction } from './Signup.store'
 import loginWithService from 'store/actions/loginWithService'
 import GoogleButton from 'components/GoogleButton'
+import useAuthProviders from 'hooks/useAuthProviders'
 import TextInput from 'components/TextInput'
 import { cn, validateEmail } from 'util/index'
 export default function Signup (props) {
   const dispatch = useDispatch()
+  const providers = useAuthProviders()
   const [email, setEmail] = useState()
   const location = useLocation()
   const [error, setError] = useState(getQuerystringParam('error', location))
@@ -117,7 +119,7 @@ export default function Signup (props) {
         </Button>
 
         <div className='flex justify-center'>
-          <GoogleButton onClick={() => handleSignupWithService('google')} />
+          {providers.google && <GoogleButton onClick={() => handleSignupWithService('google')} />}
         </div>
       </div>
     </>

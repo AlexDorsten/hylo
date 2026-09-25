@@ -1,12 +1,13 @@
 /* globals _, ProjectContribution */
 
+import { canAccessDiscussion } from '../../lib/discussionAccess'
 import data from '@emoji-mart/data'
 import { init, getEmojiDataFromNative } from 'emoji-mart'
-import { difference, filter, get, omitBy, uniq, uniqBy, isEmpty, intersection, isUndefined, pick } from 'lodash/fp'
+import { difference, filter, get, omitBy, uniq, uniqBy, isEmpty, isUndefined, pick } from 'lodash/fp'
 import { DateTime } from 'luxon'
 import format from 'pg-format'
 import { flatten, sortBy } from 'lodash'
-import { TextHelpers, DateTimeHelpers } from '@hylo/shared'
+import { TextHelpers, DateTimeHelpers, proposalOptionsEqual } from '@hylo/shared'
 import fetch from 'node-fetch'
 import { postRoom, pushToSockets } from '../services/Websockets'
 import { fulfill, unfulfill } from './post/fulfillPost'
@@ -563,6 +564,9 @@ module.exports = bookshelf.Model.extend(Object.assign({
   async updateProposalOptions ({ options = [], userId, opts = {} }) {
     opts.transacting ||= { transacting: false }
     const existingOptions = await this.proposalOptions().fetch({ transacting: opts.transacting, require: false })
+    // The post editor submits all options even when only the title/body changed.
+    // Preserve both option IDs and ballots when their persisted content is equal.
+    if (proposalOptionsEqual(existingOptions.toJSON(), options)) return
     const existingOptionIds = existingOptions.pluck('id')
 
     // Add activities for vote reset
@@ -646,7 +650,7 @@ module.exports = bookshelf.Model.extend(Object.assign({
   },
 
   pushTypingToSockets: function (userId, userName, isTyping, socketToExclude) {
-    pushToSockets(postRoom(this.id), 'userTyping', { userId, userName, isTyping, postId: String(this.id) }, socketToExclude)
+    return pushToSockets(postRoom(this.id), 'userTyping', { userId, userName, isTyping, postId: String(this.id) }, socketToExclude)
   },
 
   copy: function (attrs) {
@@ -941,16 +945,20 @@ module.exports = bookshelf.Model.extend(Object.assign({
   },
 
   isVisibleToUser: async function (postId, userId) {
-    if (!postId || !userId) return Promise.resolve(false)
+    if (!/^\d+$/.test(String(postId)) || !userId) return false
     const post = await Post.find(postId)
+    if (!post) return false
+    if (post.get('type') === Post.Type.DISCUSSION) return canAccessDiscussion(userId, postId)
     if (post.isPublic()) return true
 
-    const postGroupIds = await PostMembership.query()
-      .where({ post_id: postId }).pluck('group_id')
-    const userGroupIds = await Group.pluckIdsForMember(userId)
-
-    if (intersection(postGroupIds, userGroupIds).length > 0) return true
-    if (await post.isFollowed(userId)) return true
+    const membership = await bookshelf.knex('groups_posts')
+      .where('post_id', postId)
+      .whereIn('group_id', Group.selectIdsForMember(userId))
+      .first()
+    if (membership) return true
+    // Following is a notification preference, not continuing membership of a
+    // private discussion. Message threads retain their participant semantics.
+    if (post.get('type') !== Post.Type.DISCUSSION && await post.isFollowed(userId)) return true
 
     return false
   },

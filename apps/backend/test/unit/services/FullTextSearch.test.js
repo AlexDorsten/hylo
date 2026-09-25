@@ -21,7 +21,9 @@ describe('FullTextSearch', () => {
       expect(query).to.contain('search.sort_ts')
       expect(query).not.to.contain('count(*) over ()')
       expect(query).not.to.contain('left join "comments"')
-      expect(query).not.to.contain('is_public')
+      // A nested source-visibility check may mention is_public; explicit scope
+      // must still omit the unscoped public-comment candidate branch.
+      expect(query).not.to.contain('"p"."is_public" = true')
       expect(query).to.contain('limit 11')
       expect(query).to.contain('offset 20')
     })

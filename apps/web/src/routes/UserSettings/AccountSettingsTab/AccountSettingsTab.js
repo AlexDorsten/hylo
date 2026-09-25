@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useDispatch } from 'react-redux'
 import Button from 'components/ui/button'
 import Loading from 'components/Loading'
+import ExternalAccountConnections from 'components/ExternalAccountConnections'
 import SettingsControl from 'components/SettingsControl'
 import { useViewHeader } from 'contexts/ViewHeaderContext'
 import { cn, validateEmail } from 'util/index'
@@ -320,6 +321,8 @@ function AccountSettingsTab ({
           </div>
         </ModalDialog>
       )}
+
+      <ExternalAccountConnections />
 
       {/* Visual divider before cookies section */}
       <div className='border-t border-foreground/10 my-8' />

@@ -10,12 +10,14 @@ import login from 'store/actions/login'
 import loginWithService from 'store/actions/loginWithService'
 import TextInput from 'components/TextInput'
 import GoogleButton from 'components/GoogleButton'
+import useAuthProviders from 'hooks/useAuthProviders'
 import Button from 'components/ui/button'
 import classes from './Login.module.scss'
 import { cn } from 'util/index'
 
 export default function Login (props) {
   const dispatch = useDispatch()
+  const providers = useAuthProviders()
   const [email, setEmail] = useState()
   const [password, setPassword] = useState()
   const location = useLocation()
@@ -113,6 +115,7 @@ export default function Login (props) {
           <h1 className='text-2xl font-bold mb-4 text-foreground text-center'>{t('Sign in to Hylo')}</h1>
 
           {error && formatError(error, 'Login', t)}
+          {new URLSearchParams(location.search).has('oidcError') && <p role='alert'>{t('Provider sign-in failed. Use your local login and connect the provider in Account Settings first, or try again.')}</p>}
 
           <TextInput
             aria-label='email' label='email' name='email' id='email'
@@ -151,8 +154,13 @@ export default function Login (props) {
             {t('Sign in')}
           </Button>
         </div>
-        <div className='flex justify-center px-4 pb-4'>
-          <GoogleButton onClick={() => handleLoginWithService('google')} />
+        <div className='flex flex-col gap-2 px-4 pb-4'>
+          {providers.google && <GoogleButton onClick={() => handleLoginWithService('google')} />}
+          {providers.oidc.map(provider => (
+            <a key={provider.id} href={provider.loginUrl} className='block rounded-md border border-foreground/20 p-3 text-center'>
+              {t('Sign in with {{provider}}', { provider: provider.name })}
+            </a>
+          ))}
         </div>
       </div>
     </>

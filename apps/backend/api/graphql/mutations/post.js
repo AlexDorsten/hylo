@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql'
+import { assertDiscussionPermission, canModerateDiscussion } from '../../../lib/discussionAccess'
 import { PINNABLE_VIEW_TYPES, MAX_PINNED_POSTS_PER_VIEW } from '@hylo/shared'
 import validatePostData from '../../models/post/validatePostData'
 import underlyingCreatePost from '../../models/post/createPost'
@@ -12,6 +13,7 @@ import { deletePostDraftForCreate } from './draft'
 export async function completePost (userId, postId, completionResponse) {
   const post = await Post.find(postId)
   if (!post) throw new GraphQLError('Post not found')
+  await assertDiscussionPermission(userId, post, { editing: true })
 
   const jsonResponse = typeof completionResponse === 'string'
     ? completionResponse
@@ -37,11 +39,12 @@ export function createPost (userId, data) {
 
 export function deletePost (userId, postId) {
   return Post.find(postId)
-    .then(post => {
+    .then(async post => {
       if (!post) {
         throw new GraphQLError('Post does not exist')
       }
-      if (post.get('user_id') !== userId) {
+      await assertDiscussionPermission(userId, post, { editing: true })
+      if (post.get('type') !== Post.Type.DISCUSSION && post.get('user_id') !== userId) {
         throw new GraphQLError("You don't have permission to modify this post")
       }
       const isEvent = post.isEvent()
@@ -160,7 +163,8 @@ export async function swapProposalVote ({ userId, postId, removeOptionId, addOpt
 
 export function updateProposalOutcome ({ userId, postId, proposalOutcome }) {
   return Post.find(postId)
-    .then(post => {
+    .then(async post => {
+      await assertDiscussionPermission(userId, post, { editing: true })
       if (post.get('user_id') !== userId) {
         throw new GraphQLError("You don't have permission to modify this post")
       }
@@ -178,7 +182,10 @@ export async function pinPost (userId, postId, viewId) {
   }
 
   const group = await Group.find(view.get('group_id'))
-  const isModerator = await GroupMembership.hasResponsibility(userId, group, Responsibility.constants.RESP_MANAGE_CONTENT)
+  const post = await Post.find(postId)
+  const isModerator = post?.get('type') === Post.Type.DISCUSSION
+    ? await canModerateDiscussion(userId, postId, group.id)
+    : await GroupMembership.hasResponsibility(userId, group, Responsibility.constants.RESP_MANAGE_CONTENT)
   if (!isModerator) throw new GraphQLError("You don't have permission to modify this group")
 
   const postMembership = await PostMembership.find(postId, group.id)

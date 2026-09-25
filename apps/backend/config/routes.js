@@ -5,6 +5,9 @@
  */
 
 module.exports.routes = {
+  'GET /noo/capabilities': 'InstanceController.capabilities',
+  'GET /noo/password-reset': 'PasswordRecoveryController.show',
+  'POST /noo/password-reset': 'PasswordRecoveryController.complete',
   // for OIDC
   // XXX: unclear if its ok to redirect like this, can we somehow directly call the oidc-provider discovery function here?
   'GET    /.well-known/openid-configuration':             '/noo/oauth/.well-known/openid-configuration',
@@ -28,6 +31,11 @@ module.exports.routes = {
   'POST   /noo/hook/postForm':                            'PostController.createFromEmailForm',
   'GET    /noo/hook/batchCommentForm':                    'CommentController.createBatchFromEmailForm',
   'POST   /noo/hook/batchCommentForm':                    'CommentController.createBatchFromEmailForm',
+
+  'GET    /noo/auth/providers':                          'ExternalOidcController.capabilities',
+  'GET    /noo/login/oidc/:providerId':                   'ExternalOidcController.start',
+  'GET    /noo/login/oidc/:providerId/callback':          'ExternalOidcController.callback',
+  'POST   /noo/login/oidc/:providerId/link':             'ExternalOidcController.link',
 
   'POST   /noo/login':                                    'SessionController.create',
   'POST   /noo/login/native':                             'SessionController.nativeLogin',

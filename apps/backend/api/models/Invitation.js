@@ -124,17 +124,11 @@ module.exports = bookshelf.Model.extend(Object.assign({
             group: group.get('name')
           })
         }
-        return this.save({
+        if (this.get('tag_id')) throw new Error('need to re-implement tag invitations')
+        return Email.sendInvitation(email, data).then(() => this.save({
           sent_count: this.get('sent_count') + 1,
           last_sent_at: new Date()
-        })
-          .then(() => {
-            if (this.get('tag_id')) {
-              throw new Error('need to re-implement tag invitations')
-            } else {
-              return Email.sendInvitation(email, data)
-            }
-          })
+        }))
       })
   }
 

@@ -13670,9 +13670,11 @@ __metadata:
     mock-require: "npm:^2.0.2"
     nock: "npm:^13.5.5"
     node-fetch: "npm:^2.7.0"
+    nodemailer: "npm:10.0.10"
     nodemon: "npm:^1.12.1"
     nyc: "npm:^10.0"
     oidc-provider: "npm:^7.11.3"
+    openid-client: "npm:6.8.8"
     parse-redis-url: "npm:0.0.2"
     passport: "npm:^0.2.1"
     passport-google-oauth: "npm:^2.0.0"
@@ -25625,6 +25627,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jose@npm:^6.2.12":
+  version: 6.2.12
+  resolution: "jose@npm:6.2.12"
+  checksum: 10/42ef7b598d22fe4ed0a4d0407f9dd9ae9f56dabd31cbad6cb4f67e296953a46b5d63603f8a599a3ee4c5659bf29bb14e846237f0381ea679116520b53e71e4ea
+  languageName: node
+  linkType: hard
+
 "jquery@npm:>=1.9.1":
   version: 3.7.1
   resolution: "jquery@npm:3.7.1"
@@ -29290,6 +29299,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"nodemailer@npm:10.0.10":
+  version: 10.0.10
+  resolution: "nodemailer@npm:10.0.10"
+  checksum: 10/3aeab7cd9aa087cb6280463a7c6b30dcffe2b901f7690cecc6d104196b1d31a2f25764f74a4bf84c05667fa75174a10462e2ec71f43a275aca96c95f45299bcf
+  languageName: node
+  linkType: hard
+
 "nodemon@npm:^1.12.1":
   version: 1.19.4
   resolution: "nodemon@npm:1.19.4"
@@ -29557,6 +29573,13 @@ __metadata:
   version: 0.9.0
   resolution: "oauth-sign@npm:0.9.0"
   checksum: 10/1809a366d258f41fdf4ab5310cff3d1e15f96b187503bc7333cef4351de7bd0f52cb269bc95800f1fae5fb04dd886287df1471985fd67e8484729fdbcf857119
+  languageName: node
+  linkType: hard
+
+"oauth4webapi@npm:^3.8.8":
+  version: 3.8.8
+  resolution: "oauth4webapi@npm:3.8.8"
+  checksum: 10/7a212e4ed119dff57b44b81b0b36bd2d1f3bf3b152e201a6a864c854abad7cb5d20ada33f12e64ca544f1ea18ff0dc4b20ee847a680d5c33cb519e30f19b9045
   languageName: node
   linkType: hard
 
@@ -29883,6 +29906,16 @@ __metadata:
     is-docker: "npm:^2.0.0"
     is-wsl: "npm:^2.1.1"
   checksum: 10/4fc02ed3368dcd5d7247ad3566433ea2695b0713b041ebc0eeb2f0f9e5d4e29fc2068f5cdd500976b3464e77fe8b61662b1b059c73233ccc601fe8b16d6c1cd6
+  languageName: node
+  linkType: hard
+
+"openid-client@npm:6.8.8":
+  version: 6.8.8
+  resolution: "openid-client@npm:6.8.8"
+  dependencies:
+    jose: "npm:^6.2.12"
+    oauth4webapi: "npm:^3.8.8"
+  checksum: 10/0a8601e3b8baf910801a76c268295317b6e72ac512cf39f8d220bdb49fab3c8ed978a0717be589900982191c0fd74209d15109b50f4f4be502ff6c713f28d94e
   languageName: node
   linkType: hard
 

@@ -3,18 +3,12 @@ import { format } from 'util'
 import { normalizeLocaleToFull } from '../../lib/localeHelpers'
 import { senderNameViaHylo } from '../../lib/email/senderNameViaHylo'
 
-const api = require('sendwithus')(process.env.SENDWITHUS_KEY)
-
-const sendEmail = opts =>
-  new Promise((resolve, reject) =>
-    api.send(opts, (err, resp) => err ? reject(err) : resolve(resp)))
-    .then((resp) => {
-      return resp || true
-    })
-    .catch(err => {
-      console.error('Error sending email:', err, ' email opts = ', opts)
-      return false
-    })
+const { createDelivery } = require('../../lib/email/delivery.cjs')
+let deliver
+const sendEmail = opts => {
+  deliver ||= createDelivery()
+  return deliver(opts)
+}
 
 const defaultOptions = {
   sender: {
@@ -43,6 +37,10 @@ const sendSimpleEmail = (address, templateId, data, extraOptions, locale = 'en-U
 }
 
 const sendEmailWithOptions = curry((templateId, opts) => {
+  // This adapter currently has account templates only. Invitations must still
+  // send, and requested exports must report an unsupported-template error.
+  const accountOrExport = templateId === 'invitation' || templateId === 'tem_qRkBwBC4MVwqww87gDgRdHSG'
+  if (process.env.EMAIL_PROVIDER === 'smtp' && process.env.EMAIL_NOTIFICATIONS_ENABLED === 'false' && !accountOrExport) return Promise.resolve(false)
   const emailOpts = merge({}, defaultOptions, {
     email_id: templateId,
     recipient: { address: opts.email },
@@ -67,19 +65,19 @@ module.exports = {
     sendSimpleEmail(email, 'tem_jFYJ3bxMyfbbtbwgDGS4JGfK', data, extraOptions),
 
   sendPasswordReset: opts =>
-    sendSimpleEmail(opts.email, 'tem_phRPHm3y6RHvRFww6Vc3VBVB', opts.templateData, {}, normalizeLocaleToFull(opts.locale)),
+    sendSimpleEmail(opts.email, 'password-reset', opts.templateData, {}, normalizeLocaleToFull(opts.locale)),
 
   sendEmailVerification: opts =>
-    sendSimpleEmail(opts.email, 'tem_h99yGHv9MXTpMrPSDVTjQFyB', opts.templateData, {}, normalizeLocaleToFull(opts.locale)),
+    sendSimpleEmail(opts.email, 'email-verification', opts.templateData, {}, normalizeLocaleToFull(opts.locale)),
 
   sendFinishRegistration: opts =>
-    sendSimpleEmail(opts.email, 'tem_fqGSrDrSK6WpjTBFXSfY79k4', opts.templateData, {}, normalizeLocaleToFull(opts.locale)),
+    sendSimpleEmail(opts.email, 'finish-registration', opts.templateData, {}, normalizeLocaleToFull(opts.locale)),
 
   sendModerationAction: ({ email, templateData, locale }) =>
     sendSimpleEmail(email, 'tem_BXYk4Hxt74R9jH3pkdGfqbJM', templateData, {}, normalizeLocaleToFull(locale)),
 
   sendInvitation: (email, data) =>
-    sendEmailWithOptions('tem_GTwXKBfkTpTHRfHpmJWbYr9d', {
+    sendEmailWithOptions('invitation', {
       email,
       data,
       locale: normalizeLocaleToFull(data.locale) || 'en-US',
@@ -273,6 +271,7 @@ Profile: ${opts.actorProfileUrl}
     sendEmailWithOptions('tem_XjjSPdy6ykMpwq4JGpchmFk6', opts),
 
   postReplyAddress: function (postId, userId) {
+    if (!process.env.INBOUND_EMAIL_SALT || !process.env.INBOUND_EMAIL_DOMAIN) return undefined
     const plaintext = format('%s%s|%s', process.env.INBOUND_EMAIL_SALT, postId, userId)
     return format('reply-%s@%s', PlayCrypto.encrypt(plaintext), process.env.INBOUND_EMAIL_DOMAIN)
   },
@@ -286,6 +285,7 @@ Profile: ${opts.actorProfileUrl}
   },
 
   postCreationAddress: function (groupId, userId, type) {
+    if (!process.env.INBOUND_EMAIL_SALT || !process.env.INBOUND_EMAIL_DOMAIN) return undefined
     const plaintext = format('%s%s|%s|', process.env.INBOUND_EMAIL_SALT, groupId, userId, type)
     return format('create-%s@%s', PlayCrypto.encrypt(plaintext), process.env.INBOUND_EMAIL_DOMAIN)
   },
@@ -300,6 +300,7 @@ Profile: ${opts.actorProfileUrl}
   },
 
   formToken: function (groupId, userId) {
+    if (!process.env.INBOUND_EMAIL_SALT || !process.env.INBOUND_EMAIL_DOMAIN) return undefined
     const plaintext = format('%s%s|%s|', process.env.INBOUND_EMAIL_SALT, groupId, userId)
     return PlayCrypto.encrypt(plaintext)
   },

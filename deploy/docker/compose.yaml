@@ -1,0 +1,121 @@
+name: ${COMPOSE_PROJECT_NAME:-hylo}
+
+x-image: &image
+  image: ${HYLO_IMAGE:-hylo-local:development}
+  build:
+    context: ../..
+    dockerfile: deploy/docker/Dockerfile
+    args:
+      NODE_IMAGE: ${NODE_IMAGE:-node:24-bookworm-slim}
+      PUBLIC_ORIGIN: https://${HYLO_DOMAIN:?Set HYLO_DOMAIN in .env}
+      VITE_FILESTACK_API_KEY: ${VITE_FILESTACK_API_KEY:-}
+      VITE_MAPBOX_TOKEN: ${VITE_MAPBOX_TOKEN:-}
+      VITE_STRIPE_CLIENT_ID: ${VITE_STRIPE_CLIENT_ID:-}
+
+x-backend: &backend
+  <<: *image
+  init: true
+  env_file: backend.env
+  environment:
+    NODE_ENV: production
+    DATABASE_URL: postgres://hylo:${APP_DB_PASSWORD:?Set a URL-safe APP_DB_PASSWORD}@db:5432/hylo
+    HYLO_DATABASE_SSL: 'false'
+    REDIS_URL: redis://redis:6379
+    PROTOCOL: https
+    DOMAIN: ${HYLO_DOMAIN}
+    CORS_ALLOWED_ORIGINS: https://${HYLO_DOMAIN}
+    COOKIE_NAME: hylo-session
+    COOKIE_SECRET: ${COOKIE_SECRET:?Generate COOKIE_SECRET}
+    JWT_SECRET: ${JWT_SECRET:?Generate JWT_SECRET}
+    PORT: '3001'
+  networks: [app, data]
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  logging: &logging
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: '3'
+
+services:
+  db:
+    image: ${POSTGIS_IMAGE:-postgis/postgis:17-3.5}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hylo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate POSTGRES_PASSWORD}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+    command: [postgres, -c, shared_preload_libraries=pg_stat_statements]
+    volumes:
+      - database:/var/lib/postgresql/data
+      - ./20-app-role.sh:/docker-entrypoint-initdb.d/20-app-role.sh:ro
+    networks: [data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U postgres -d hylo']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging: *logging
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:7.2-alpine}
+    restart: unless-stopped
+    command: [redis-server, --appendonly, 'yes', --appendfsync, everysec, --maxmemory-policy, noeviction]
+    volumes: [queue:/data]
+    networks: [data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: *logging
+
+  api:
+    <<: *backend
+    profiles: [application]
+    restart: unless-stopped
+    ports: ['127.0.0.1:${API_PORT:-3001}:3001']
+
+  worker:
+    <<: *backend
+    profiles: [application]
+    restart: unless-stopped
+    command: [node, --optimize_for_size, --gc_interval=100, worker.js]
+
+  web:
+    <<: *image
+    profiles: [application]
+    init: true
+    restart: unless-stopped
+    working_dir: /app/apps/web
+    command: [node, src/server/index.js]
+    environment:
+      NODE_ENV: production
+      PORT: '9001'
+      HYLO_MARKETING_PROXY: 'false'
+      HYLO_COOKIE_NAME: hylo-session
+      # This is server-side only; the public origin was embedded during build.
+      VITE_API_HOST: http://api:3001
+    networks: [app]
+    ports: ['127.0.0.1:${WEB_PORT:-9001}:9001']
+    depends_on: [api]
+    logging: *logging
+
+  maintenance:
+    <<: *backend
+    profiles: [maintenance]
+    restart: 'no'
+    command: [yarn, workspace, backend, migrate]
+
+networks:
+  app: {}
+  data:
+    internal: true
+
+volumes:
+  database: {}
+  queue: {}
