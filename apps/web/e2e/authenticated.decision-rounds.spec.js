@@ -5,7 +5,9 @@ import { seedDiscussion, revokeDiscussionMember, withDatabase } from './helpers/
 import { ensureHyloCookieConsent } from './helpers/sessionAuth.js'
 import { waitPastRootSessionLoading } from './helpers/waitPastRootSessionLoading.js'
 
-test.describe.configure({ timeout: 240000 })
+// Four sessions and repeated full app loads took 234s under concurrent CI load.
+// Keep each UI assertion bounded while allowing the complete lifecycle to finish.
+test.describe.configure({ timeout: 360000 })
 const uiTimeout = { timeout: 60000 }
 const query = 'query ($postId: ID!) { decisionRounds(postId: $postId) { rounds { id phase electorateCount ownBallot { version state answers { optionId score } } result { status complete bestOptionIds options { id total } } } } }'
 async function read (page, postId) {
@@ -68,11 +70,11 @@ test('decision rounds: private SK lifecycle, three voters, replacement, withdraw
   await page.reload()
   await expect(panel.getByRole('combobox').first()).toHaveValue('0', uiTimeout)
 
-  const contexts = []
+  const contexts = new Set()
   try {
     for (const [person, values] of [[fixture, [4, 3, 5]], [third, [8, 3, 5]]]) {
       const context = await browser.newContext({ storageState: { cookies: [], origins: [] }, viewport: page.viewportSize() })
-      contexts.push(context)
+      contexts.add(context)
       const memberPage = await context.newPage()
       await login(memberPage, person.email)
       await memberPage.goto(path)
@@ -94,12 +96,16 @@ test('decision rounds: private SK lifecycle, three voters, replacement, withdraw
         await expect(memberPanel).toHaveCount(0)
         expect((await read(memberPage, fixture.postId)).errors[0].extensions.code).toBe('DECISION_ACCESS_DENIED')
       }
+      await context.close()
+      contexts.delete(context)
     }
     const outsiderContext = await browser.newContext({ storageState: { cookies: [], origins: [] } })
-    contexts.push(outsiderContext)
+    contexts.add(outsiderContext)
     const outsider = await outsiderContext.newPage()
     await login(outsider, 'e2e.nogroups@hylo.test')
     expect((await read(outsider, fixture.postId)).errors[0].extensions.code).toBe('DECISION_ACCESS_DENIED')
+    await outsiderContext.close()
+    contexts.delete(outsiderContext)
 
     await panel.getByRole('button', { name: 'Close and publish results' }).click()
     await panel.getByRole('button', { name: 'Confirm round action' }).click()
@@ -136,5 +142,5 @@ test('decision rounds: private SK lifecycle, three voters, replacement, withdraw
     const rounds = (await read(page, fixture.postId)).data.decisionRounds.rounds
     expect(rounds[0].ownBallot.version).toBe(0)
     expect(rounds[1].result.options.map(o => o.total)).toEqual([9, 12, 15])
-  } finally { for (const context of contexts) await context.close() }
+  } finally { await Promise.allSettled([...contexts].map(context => context.close())) }
 })
