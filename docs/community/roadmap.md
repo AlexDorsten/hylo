@@ -1,6 +1,8 @@
 # Community functionality roadmap
 
-Status: incremental implementation in draft PR #21; not a released feature set.
+Status: discussion overview accepted in #14 through the integrated work in PR #22.
+Native decision rounds and systemic consensus are the next implementation increment;
+the complete decision/outcome/export workflow is not yet released.
 
 The community fork will retain the existing Hylo core and improve complete user
 workflows incrementally. Docker operation, configurable external OIDC providers
@@ -27,22 +29,24 @@ Inspection of the existing code found threaded comments, proposal templates,
 single-choice and unrestricted multiple-choice voting, deadlines and quorum UI.
 Templates labelled consent/consensus do not establish distinct voting algorithms:
 the stored voting methods are currently single and multi-unrestricted. Discussions
-and proposals are separate post types. A durable sequence of decision rounds,
-per-alternative resistance ballots and accountable outcomes is not yet established.
+and proposals are separate post types. The native increment now adds durable
+decision rounds and complete resistance ballots alongside those legacy proposals.
+Structured outcomes remain in #18.
 
 One concrete defect is repaired on the implementation branch: the editor submits all options on
 an ordinary proposal edit, and the backend used to delete their votes even if the
 options were unchanged. Preserving identical options is a bounded repair. It does
-not make changes to active or completed decisions immutable; round history is the
-next structural step.
+not make legacy proposals immutable; new decision rounds use a separate model.
 
-The next implemented increment adds a member-only discussion overview: editable
+The accepted discussion increment adds a member-only overview: editable
 context, a separate summary, open questions and attributed revision history.
 Existing posts, comments and attachments are preserved. See the
 [discussion review evidence and remaining release gates](review/discussion-overview.md).
-This does not yet add decision rounds, systemic consensus or automated summaries.
-Issue #14 remains open until the broader legacy access checks and integration
-with the deployment branch are complete.
+Issue #14 is closed after integration, access checks and pilot acceptance. Native
+rounds and SK are described in [ADR 0002](../adr/0002-native-decision-rounds.md) and
+the [decision review and rollout guide](review/decision-rounds.md). Their local API,
+browser and database recovery checks pass; deployment acceptance remains separate.
+Automated summaries and structured outcomes are not part of this increment.
 
 With every increment, assess [optional AI assistance](ai-assistance.md): useful
 tasks, minimum permitted input, human review and failure cases. The core workflow
@@ -54,8 +58,8 @@ must remain usable without an AI provider.
 | --- | --- | --- |
 | Preserve existing votes | Edit a proposal title/body without a ballot reset; warn when options really change | None |
 | Discussion context and summary | Read the question, context, latest summary, open questions and their revision history above the existing conversation | None |
-| Loomio feasibility demonstration | Follow one private-group decision across a local Hylo/Loomio setup and document identity, access, SK, history and operational gaps | None; maintainer decision before selecting an integration |
-| Decision rounds in a discussion | Create, vote in, close and revisit a round without losing earlier versions | Context slice; feasibility decision for implementation approach |
+| Architecture decision | Native rounds selected after source assessment; the proposed Loomio deployment demo is superseded, not passed | ADR 0002 |
+| Decision rounds in a discussion | Create, vote in, close and revisit a round without losing earlier versions | Context slice; accepted ADR 0002 |
 | Systemic consensus | Evaluate all alternatives and an explicit passive option using resistance scores and inspect a correctly closed result | Decision rounds |
 | Outcomes and follow-up | Record what happens next, who owns it and when it will be reviewed; connect any next round | Decision rounds and SK for its scenario |
 | Return, notify and export | Resume a long discussion at unread activity, receive controlled reminders and retrieve a permission-safe decision record | Context, rounds and outcomes |
@@ -71,27 +75,18 @@ facilitated clarification and subsequent rounds. Do not reduce it to a yes/no po
 or relabel approval points as resistance. The minimum-resistance result informs a
 recorded human decision; it must not silently execute an action.
 
-## Loomio: investigate reuse before duplicating its decision engine
+## Loomio assessment and accepted native direction
 
-Loomio is a reference for coherent workflows, not a requirement to copy its
-interface or add another mandatory service. Its documentation keeps discussion
-context, comments, decisions and outcomes together. Its Score poll exposes a
-numeric scale and aggregate results, but that does not demonstrate all of our SK
-requirements. See [threads](https://www.loomio.com/docs/en/user_manual/discussions/using_discussions)
-and [Score](https://www.loomio.com/docs/en/user_manual/polls/score).
+Loomio remains a reference for coherent discussion, decision and outcome workflows.
+The source assessment in #15 examined commit
+`390573d745f990f80c4f4f37fd4f65f2470a06c8`: its score inputs, editable poll lifecycle
+and separate membership management would require changes for our requirements.
+A live integration, OIDC acceptance and operational demonstration were not run.
 
-A bounded demonstration must establish what the current self-hosted release and
-supported APIs actually allow: shared login with an operator-selected OIDC provider,
-account mapping, private-group access and revocation, creation and return navigation,
-resistance rather than approval ranking, passive option, complete ballots, revisions,
-result import and permission-safe export. Record exact versions, reproducible setup,
-licensing constraints from upstream sources, failure behavior and maintenance cost.
-
-Choose and record an ADR after that evidence: native rounds, an optional adapter,
-or a justified hybrid. No remote account, SaaS subscription or unverified iframe
-flow may become a hidden prerequisite. OIDC login alone does not synchronize group
-membership or prove authorization. Until a decision is recorded, the native model
-is a design candidate, not a committed migration or replacement of Hylo.
+The maintainer selected native Hylo decision rounds and SK. [ADR 0002](../adr/0002-native-decision-rounds.md)
+records that decision and supersedes the proposed demonstration. Rounds use the
+existing API, PostgreSQL and web containers; no additional decision service,
+identity directory or mandatory SaaS provider is introduced.
 
 ## Functional acceptance for the rest of the community platform
 

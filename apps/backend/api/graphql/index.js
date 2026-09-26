@@ -7,6 +7,7 @@ import RedisPubSub from '../services/RedisPubSub'
 import makeSchema from './makeSchema'
 import { createGroupVisibilityLoader } from './filters'
 import sentry from '../../lib/sentry'
+import { isDecisionRequest } from '../../lib/decisionPrivacy'
 
 export const GRAPHQL_ENDPOINT = '/noo/graphql'
 
@@ -20,6 +21,12 @@ const graphqlRequestStore = new AsyncLocalStorage()
 function maskAndLogGraphqlError (error, message, isDev) {
   const result = maskError(error, message, isDev)
   if (result?.message === message) {
+    // Database errors can contain SQL bindings. Never report private ballot
+    // payloads or their request context, even when debug telemetry is enabled.
+    if (graphqlRequestStore.getStore()?.privateDecision) {
+      sails.log.error('[graphql] unexpected decision-round error')
+      return maskError(new Error('Decision round request failed'), message, isDev)
+    }
     const original = error?.originalError instanceof Error
       ? error.originalError
       : (error instanceof Error ? error : new Error(String(error)))
@@ -51,6 +58,7 @@ const graphqlSentryContextPlugin = {
     setExecuteFn((executionArgs) => {
       const contextValue = executionArgs?.contextValue || args.contextValue
       return graphqlRequestStore.run({
+        privateDecision: contextValue?.privateDecision,
         currentUserId: contextValue?.currentUserId,
         operationName: executionArgs?.operationName || args.operationName
       }, () => executeFn(executionArgs))
@@ -64,7 +72,8 @@ export const yoga = createYoga({
   // plugins: [useLazyLoadedSchema(createSchema)],
   plugins: [graphqlSentryContextPlugin],
   context: async ({ req, params }) => {
-    if (process.env.DEBUG_GRAPHQL) {
+    const privateDecision = isDecisionRequest(params)
+    if (process.env.DEBUG_GRAPHQL && !privateDecision) {
       sails.log.info('\n' +
         red('graphql query start') + '\n' +
         params?.query + '\n' +
@@ -75,7 +84,7 @@ export const yoga = createYoga({
 
     // AUTH_DEBUG diagnostic: the final identity GraphQL will use for this request,
     // plus whether it was driven by a Bearer token (api_client set) or a cookie.
-    if (process.env.AUTH_DEBUG) {
+    if (process.env.AUTH_DEBUG && !privateDecision) {
       const opName = params?.operationName
       sails.log.info(`[auth] graphql context op=${opName || '?'} currentUserId=${req.session.userId} viaToken=${!!req.api_client} hasCookieHeader=${!!req.headers.cookie}`)
     }
@@ -90,6 +99,7 @@ export const yoga = createYoga({
     return {
       pubSub: RedisPubSub,
       socket: req.socket,
+      privateDecision,
       currentUserId: req.session.userId,
       groupVisibilityLoader: createGroupVisibilityLoader()
     }

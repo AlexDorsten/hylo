@@ -1,8 +1,9 @@
 # Discussion and self-hosting integration
 
-This branch combines the discussion work from PR #21 (`0e6ab4f0f`) with the
-self-hosting work from PR #10 (`b842ebb3d`). It is a release candidate for the
-existing pilot, not completion of the self-hosting backlog or decision rounds.
+PR #22 combines the discussion work from PR #21 (`0e6ab4f0f`) with the
+self-hosting work from PR #10 (`b842ebb3d`). Its pilot acceptance at `2f28aecad`
+closed #14. This is not completion of the self-hosting backlog. The next native
+decision increment has a [separate rollout guide](decision-rounds.md).
 
 ## Integration boundaries
 
@@ -57,7 +58,8 @@ or production Compose project.
 
 Mixed old and new API/worker publishers do not provide the new private-discussion
 delivery boundary. A successful build or database migration alone is not pilot
-acceptance. Issue #14 stays open until these integration and rollout gates are met.
+acceptance. These integration and rollout gates remain required for subsequent releases;
+#14 records acceptance of the preceding overview release.
 
 AI opportunities and limits remain documented in `../ai-assistance.md`. No AI
 provider, generation call or transfer of community data is part of this release.

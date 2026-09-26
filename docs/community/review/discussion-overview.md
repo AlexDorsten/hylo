@@ -1,8 +1,9 @@
 # Discussion overview: review and integration notes
 
-This implements the context/summary increment of #14 in draft PR #21. It is web
-functionality on the development branch, not a deployment or a claim that the
-whole community decision workflow is complete.
+This records the context/summary increment of #14 from PR #21, subsequently
+integrated in PR #22. Pilot acceptance at `2f28aecad` closed #14. The historical
+checks below do not claim the complete decision/outcome workflow; the next native
+decision increment has [separate evidence](decision-rounds.md).
 
 ## Behavior
 
@@ -81,8 +82,8 @@ fixes. Adjacent tests also caught SQL NULL handling for older untyped posts; the
 shared restriction preserves those non-discussion paths. Notification fixtures now
 set the recipient as production Activity.createNotifications does.
 
-The #14 release gate still requires the integrated deployment and complete CI on
-that revision. These tests document bounded discussion paths; they are not an audit
+The #14 integration, CI and deployment gate was subsequently accepted through
+PR #22; the checks described here record the preceding implementation review. These tests document bounded discussion paths; they are not an audit
 of every existing Hylo endpoint or a guarantee against all concurrent permission
 changes. Already delivered data cannot be recalled.
 Native mobile clients, full assistive-technology testing and production integration

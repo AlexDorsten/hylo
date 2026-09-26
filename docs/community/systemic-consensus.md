@@ -1,7 +1,10 @@
 # Systemic consensus (Systemisches Konsensieren, SK)
 
-Status: required community capability; proposed implementation contract. This is
-not implemented by the existing single/multiple-choice proposal model.
+Status: accepted product contract. The first native web implementation covers
+private decision rounds, complete ballots, closed assessments and linked new rounds;
+see [review evidence and rollout gates](review/decision-rounds.md). Structured human
+outcomes (#18) and permission-safe exports (#20) remain separate work. Legacy
+single/multiple-choice proposals do not implement this method.
 
 ## Purpose and terms
 

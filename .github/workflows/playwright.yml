@@ -148,7 +148,7 @@ jobs:
       - name: Check proposal and discussion editor behavior
         run: |
           yarn workspace @hylo/shared test --runInBand --runTestsByPath src/ProposalHelpers.test.js
-          yarn workspace web test --watchAll=false --runInBand --runTestsByPath src/components/PostEditor/PostEditor.test.js src/components/DiscussionOverview/DiscussionOverview.test.js src/routes/PostDetail/PostDetail.test.js src/routes/PostDetail/Comments/CommentForm/CommentForm.test.js
+          yarn workspace web test --watchAll=false --runInBand --runTestsByPath src/components/PostEditor/PostEditor.test.js src/components/DiscussionOverview/DiscussionOverview.test.js src/components/DecisionRounds/DecisionRounds.test.js src/routes/PostDetail/PostDetail.test.js src/routes/PostDetail/Comments/CommentForm/CommentForm.test.js
 
       - name: Check proposal votes and discussion permissions against PostgreSQL
         env:
@@ -158,7 +158,7 @@ jobs:
           DOMAIN: localhost:3000
         run: |
           createdb --maintenance-db=postgresql://postgres:postgres@localhost:5432/postgres test_hylo_proposals
-          yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js test/unit/graphql/Discussions.test.js test/unit/graphql/DiscussionAccess.test.js test/unit/graphql/DiscussionDelivery.test.js test/unit/graphql/DiscussionRemainingAccess.test.js --timeout 10000
+          yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js test/unit/graphql/Discussions.test.js test/unit/graphql/Decisions.test.js test/unit/graphql/DiscussionAccess.test.js test/unit/graphql/DiscussionDelivery.test.js test/unit/graphql/DiscussionRemainingAccess.test.js --timeout 10000
 
       - name: Run Playwright E2E (isolated DB + API + web)
         working-directory: apps/web

@@ -7,6 +7,7 @@ import { merge, reduce } from 'lodash'
 import setupBridge from '../../lib/graphql-bookshelf-bridge'
 import { presentQuerySet } from '../../lib/graphql-bookshelf-bridge/util'
 import mixpanel from '../../lib/mixpanel'
+import { decisionRounds, manageDecisionRound, submitDecisionBallot } from './decisions'
 import { discussionOverview, discussionHistory, updateDiscussion } from './discussions'
 import {
   saveDraft,
@@ -434,6 +435,7 @@ export function makePublicQueries ({ fetchOne, fetchMany }) {
 // Queries that logged in users can make
 export function makeAuthenticatedQueries ({ fetchOne, fetchMany }) {
   return paymentResolvers({
+    decisionRounds: (root, args, context) => decisionRounds(context.currentUserId, args),
     discussionOverview: (root, args, context) => discussionOverview(context.currentUserId, args),
     discussionHistory: (root, args, context) => discussionHistory(context.currentUserId, args),
     activity: (root, { id }) => fetchOne('Activity', id),
@@ -589,6 +591,8 @@ export function makeMutations ({ fetchOne }) {
     // available between auth'd and non-auth'd sessions
     ...makePublicMutations({ fetchOne }),
 
+    manageDecisionRound: (root, args, context) => manageDecisionRound(context.currentUserId, args),
+    submitDecisionBallot: (root, args, context) => submitDecisionBallot(context.currentUserId, args),
     updateDiscussion: (root, args, context) => updateDiscussion(context.currentUserId, args),
 
     acceptGroupRelationshipInvite: (root, { groupRelationshipInviteId }, context) => acceptGroupRelationshipInvite(context.currentUserId, groupRelationshipInviteId, context),

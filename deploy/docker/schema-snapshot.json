@@ -1,9 +1,10 @@
 {
   "reviewedSchemaCommit": "bb8bd755c5dd49cfe5154afd9c4d438b054ebae5",
-  "schemaSha256": "ac0511e84e8e40d0bcc42218110e476c2a1446c691636fa9dd6838dad68b945a",
-  "migrationsSha256": "c0d50a5094ba0ebdf5a48d7a4d14254e4d674eb146ed4b232ec1573afe0a9e43",
+  "schemaSha256": "6d4c15718f6dc3709c125251ff920835b7c5ad8e13ea4a1d848e3ba328bd45a9",
+  "migrationsSha256": "91babd02add25cd6462956a8b39ba884a9a1a312f7d31da17026cfc8b6c7d53f",
   "reviewedAdditions": [
     "20260925110000_external_oidc_identities.js",
-    "20260925120000_discussion_revisions.js"
+    "20260925120000_discussion_revisions.js",
+    "20260926090000_decision_rounds.js"
   ]
 }

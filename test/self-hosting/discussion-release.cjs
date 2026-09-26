@@ -6,6 +6,10 @@ const path = require('node:path')
 const backendRequire = createRequire(path.resolve(__dirname, '../../apps/backend/package.json'))
 const migrationName = '20260925120000_discussion_revisions.js'
 const migration = backendRequire('./migrations/' + migrationName)
+const decisionMigrationName = '20260926090000_decision_rounds.js'
+const decisionMigration = backendRequire('./migrations/' + decisionMigrationName)
+const decisions = require('./decision-release-fixture.cjs')
+const { structure: decisionStructure } = require('./decision-schema.integration.cjs')
 const userId = '8000000000001'
 const postId = '8000000000002'
 const commentId = '8000000000003'
@@ -68,6 +72,9 @@ async function main () {
       // Reconstruct the previous Docker release, which has external identities
       // but no revision table. Never execute this on an operator database.
       await db.transaction(async trx => {
+        assert.equal((await trx('decision_rounds').count('* as count').first()).count, '0')
+        await decisionMigration.down(trx)
+        await trx('knex_migrations').where('name', decisionMigrationName).del()
         await migration.down(trx)
         await trx('knex_migrations').where('name', migrationName).del()
         await trx('users').insert({ id: userId, name: 'Release rehearsal author', email: 'release-rehearsal@example.org', active: true })
@@ -79,18 +86,24 @@ async function main () {
     } else if (command === 'write-revision') {
       await verifyLegacy(db)
       await db('discussion_revisions').insert({ ...revision, open_questions: JSON.stringify(revision.open_questions) })
+      await decisions.write(db)
     } else if (command === 'verify-revision') {
       await verifyLegacy(db)
+      await decisions.verify(db)
+      assert.equal((await db('knex_migrations').where('name', decisionMigrationName)).length, 1)
       assert.deepEqual(await db('discussion_revisions').where({ post_id: postId, version: 1 }).first(), revision)
       assert.equal((await db('knex_migrations').where('name', migrationName)).length, 1)
       const freshUrl = new URL(url.href)
       freshUrl.pathname = '/hylo'
       const fresh = backendRequire('knex')({ client: 'pg', connection: freshUrl.href, pool: { min: 0, max: 1 } })
       try {
+        assert.deepEqual(await decisionStructure(db), await decisionStructure(fresh), 'Decision schema must survive upgrade and restore')
         assert.deepEqual(await structure(db), await structure(fresh), 'Upgraded/restored structure must match fresh bootstrap')
       } finally { await fresh.destroy() }
     } else if (command === 'verify-baseline') {
       await verifyLegacy(db)
+      assert.equal(await db.schema.hasTable('decision_rounds'), false)
+      assert.equal((await db('knex_migrations').where('name', decisionMigrationName)).length, 0)
       assert.equal(await db.schema.hasTable('discussion_revisions'), false)
       assert.equal((await db('knex_migrations').where('name', migrationName)).length, 0)
     } else throw new Error('Unknown rehearsal command')

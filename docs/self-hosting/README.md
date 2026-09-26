@@ -228,6 +228,10 @@ timezone configuration, failure reporting, overlap prevention and monitoring.
 For the integrated discussion release, follow the
 [discussion rollout gate](../community/review/discussion-rollout.md), including
 the migration/restore rehearsal and coordinated replacement of every publisher.
+For native decision rounds and SK, also follow the
+[decision-round rollout guide](../community/review/decision-rounds.md). It adds one
+database migration and no new containers; closed-round history and ballot revisions
+must survive the upgrade and database restore.
 
 Stop API, worker, web and the external scheduler before a coordinated update.
 Record the current source/image digests and retain a recoverable database, media,

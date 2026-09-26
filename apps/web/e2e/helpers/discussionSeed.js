@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 const requireBackend = createRequire(new URL('../../../backend/package.json', import.meta.url))
 const { Client } = requireBackend('pg')
 
-async function withDatabase (run) {
+export async function withDatabase (run) {
   const url = process.env.E2E_DATABASE_URL
   if (process.env.E2E_ISOLATED !== '1' || !url || !new URL(url).pathname.includes('e2e')) {
     throw new Error('Discussion fixtures require a dedicated isolated E2E database')

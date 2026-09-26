@@ -35,8 +35,8 @@ module.exports.http = {
     sentry: require('../lib/sentry').errorHandler(),
 
     requestLogger: function (req, res, next) {
-      // Authorization codes and state must not be written to access logs.
-      const loggedUrl = req.path.startsWith('/noo/login/oidc/') || req.path === '/noo/password-reset' ? req.path : req.url
+      // Authorization codes, state and inline GraphQL inputs must not reach access logs.
+      const loggedUrl = req.path.startsWith('/noo/login/oidc/') || req.path === '/noo/password-reset' || req.path === '/noo/graphql' ? req.path : req.url
       sails.log.info(magenta(`${req.method} ${loggedUrl}`))
       next()
     },

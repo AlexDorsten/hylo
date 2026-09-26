@@ -71,15 +71,15 @@ jobs:
           grep -q 'Refusing bootstrap: application relations already exist' /tmp/bootstrap-retry.log
       - name: Verify external identity migration and concurrent callbacks
         run: docker compose run --rm --no-deps -e HYLO_SELF_HOSTING_INTEGRATION=1 maintenance node --test /app/test/self-hosting/oidc-storage.integration.cjs
-      - name: Verify discussion migration matches fresh bootstrap
-        run: docker compose run --rm --no-deps -e HYLO_SELF_HOSTING_INTEGRATION=1 maintenance node --test /app/test/self-hosting/discussion-schema.integration.cjs
+      - name: Verify discussion and decision migrations match fresh bootstrap
+        run: docker compose run --rm --no-deps -e HYLO_SELF_HOSTING_INTEGRATION=1 maintenance node --test /app/test/self-hosting/discussion-schema.integration.cjs /app/test/self-hosting/decision-schema.integration.cjs
       - name: Verify first-operator lookup against PostgreSQL
         run: docker compose run --rm --no-deps -e HYLO_SELF_HOSTING_INTEGRATION=1 maintenance node --test /app/test/self-hosting/operator.integration.cjs
       - name: Verify password recovery expiry, replay, concurrency and session revocation
         run: docker compose run --rm --no-deps -e HYLO_SELF_HOSTING_INTEGRATION=1 maintenance node --test /app/test/self-hosting/password-recovery.integration.cjs
       - name: Verify update command after initial installation
         run: docker compose run --rm --no-deps maintenance
-      - name: Rehearse discussion upgrade, backup, restore and previous-schema recovery
+      - name: Rehearse discussion and decision upgrade, backup, restore and previous-schema recovery
         env:
           HYLO_SELF_HOSTING_INTEGRATION: '1'
           HYLO_DISPOSABLE_COMPOSE: '1'

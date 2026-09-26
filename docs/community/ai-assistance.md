@@ -51,3 +51,21 @@ private-space access. People review source versions, unresolved objections and
 omissions before publishing any assisted text. Test role removal, disabled roles,
 source deletion, cross-recipient records and stale schema caches. No AI service,
 provider configuration or data transfer is introduced by these access changes.
+
+## Native decision rounds and systemic consensus
+
+A future opt-in assistant could check a draft question for ambiguity, suggest
+neutral wording, flag overlapping alternatives, and ask whether the passive
+option actually describes what happens without an agreed change. Allowed inputs
+are the explicitly selected draft and source discussion material the requesting
+member can currently read. Suggestions need facilitator review before opening;
+they cannot modify a frozen round.
+
+After closure, it could help draft a source-linked explanation of the aggregate
+result and unanswered concerns for human review. It must not receive raw ballots,
+ballot identities, hidden/open-round aggregates, or infer individuals' resistance,
+abstentions or votes. Scores, arithmetic, eligibility and deadlines remain
+conventional deterministic server logic. Failure cases include persuasive framing,
+omitted minority concerns, false agreement, and exposing preferences in small
+groups. No assistant may vote, infer missing scores, resolve ties or adopt an
+outcome. This assessment adds no AI provider or transmission of community data.
