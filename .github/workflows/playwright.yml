@@ -54,7 +54,7 @@ env:
   STRIPE_API_KEY: sk_test_fake_api_key_for_testing_purposes
   # OIDC_KEYS: set in a step below from secrets.OIDC_KEYS or an ephemeral RSA key (passport JWT strategy).
   # One Vite + one API: tune workers for runner capacity (override with E2E_PLAYWRIGHT_WORKERS).
-  E2E_PLAYWRIGHT_WORKERS: '8'
+  E2E_PLAYWRIGHT_WORKERS: '4'
 
 jobs:
   e2e:
@@ -144,6 +144,21 @@ jobs:
             # OpenSSL 3 defaults to PKCS#8 PEM; rsa-pem-to-jwk (rsa-unpack) needs PKCS#1 `BEGIN RSA PRIVATE KEY`.
             echo "OIDC_KEYS=$(openssl genrsa -traditional 2048 2>/dev/null | base64 -w0)" >> "$GITHUB_ENV"
           fi
+
+      - name: Check proposal and discussion editor behavior
+        run: |
+          yarn workspace @hylo/shared test --runInBand --runTestsByPath src/ProposalHelpers.test.js
+          yarn workspace web test --watchAll=false --runInBand --runTestsByPath src/components/PostEditor/PostEditor.test.js src/components/DiscussionOverview/DiscussionOverview.test.js src/components/DecisionRounds/DecisionRounds.test.js src/routes/PostDetail/PostDetail.test.js src/routes/PostDetail/Comments/CommentForm/CommentForm.test.js
+
+      - name: Check proposal votes and discussion permissions against PostgreSQL
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_hylo_proposals
+          # Sails also loads the built-in OIDC provider during model tests.
+          PROTOCOL: http
+          DOMAIN: localhost:3000
+        run: |
+          createdb --maintenance-db=postgresql://postgres:postgres@localhost:5432/postgres test_hylo_proposals
+          yarn workspace backend test test/unit/models/ProposalOptionPreservation.test.js test/unit/graphql/Discussions.test.js test/unit/graphql/Decisions.test.js test/unit/graphql/DiscussionAccess.test.js test/unit/graphql/DiscussionDelivery.test.js test/unit/graphql/DiscussionRemainingAccess.test.js --timeout 10000
 
       - name: Run Playwright E2E (isolated DB + API + web)
         working-directory: apps/web

@@ -1,5 +1,10 @@
 # Hylo Monorepo
 
+For this fork's community work, see the [Docker installation guide](docs/self-hosting/README.md),
+[architecture decision](docs/adr/0001-community-self-hosting.md) and
+[contribution guide](CONTRIBUTING.md). Self-hosting is in progress; the guide
+lists current blockers and does not yet represent a production-ready release.
+
 Thanks for checking out our code. The documentation below may be incomplete or incorrect. We welcome pull requests! But we're a very small team, so we can't guarantee timely responses.
 
 :heart:, [Tibet](https://github.com/tibetsprague), [Loren](https://github.com/lorenjohnson), [Tom](https://github.com/thomasgwatson)
@@ -7,6 +12,11 @@ Thanks for checking out our code. The documentation below may be incomplete or i
 [![Code Climate](https://codeclimate.com/github/Hylozoic/hylo-node/badges/gpa.svg)](https://codeclimate.com/github/Hylozoic/hylo-node) [![Test Coverage](https://codeclimate.com/github/Hylozoic/hylo-node/badges/coverage.svg)](https://codeclimate.com/github/Hylozoic/hylo-node/coverage)
 
 ## Quick Start
+
+For this fork's planned self-hosted community features, see the
+[community roadmap](docs/community/roadmap.md) and the
+[systemic consensus specification](docs/community/systemic-consensus.md).
+These documents distinguish implementation work from proposed capabilities.
 
 1. Install and use nvm to install the correct version of node. You can just do `nvm install` to ensure the correct version is installed and then `nvm use`
 

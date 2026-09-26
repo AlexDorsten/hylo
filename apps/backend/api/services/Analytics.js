@@ -1,25 +1,24 @@
-const sails = require('sails')
 import { v4 as uuidv4 } from 'uuid'
-var instance
+let instance
 
-/** No-op Segment when unit tests, isolated E2E, or explicit opt-out (analytics-node asserts on missing write key). */
+// An unconfigured community instance must neither initialize Segment nor emit
+// tracking pixels. Keep the explicit opt-out for existing configured instances.
 const segmentDisabled =
-  process.env.NODE_ENV === 'test' || process.env.DISABLE_SEGMENT === '1'
+  !process.env.SEGMENT_KEY || process.env.NODE_ENV === 'test' || process.env.DISABLE_SEGMENT === '1'
 
 if (segmentDisabled) {
   instance = {
-    track: function (opts) {
-      sails.log.verbose('Analytics.track: ' + JSON.stringify(opts))
-    }
+    track: function () {}
   }
 } else {
   instance = require('analytics-node')(process.env.SEGMENT_KEY)
 }
 
 instance.pixelUrl = function (emailName, props) {
-  var prefix = 'https://api.segment.io/v1/pixel/track?data='
+  if (segmentDisabled) return undefined
+  const prefix = 'https://api.segment.io/v1/pixel/track?data='
 
-  var data = {
+  const data = {
     writeKey: process.env.SEGMENT_KEY,
     event: 'Viewed Email: ' + emailName,
     properties: props
@@ -31,12 +30,12 @@ instance.pixelUrl = function (emailName, props) {
     data.anonymousId = uuidv4()
   }
 
-  var encodedData = Buffer.from(JSON.stringify(data), 'utf8').toString('base64')
+  const encodedData = Buffer.from(JSON.stringify(data), 'utf8').toString('base64')
   return prefix + encodedData
 }
 
 instance.trackSignup = function (userId, req) {
-  let properties = {platform: 'Web'}
+  const properties = { platform: 'Web' }
   if (req.headers['ios-version']) {
     properties.platform = 'ios'
   } else if (req.headers['android-version']) {
@@ -45,7 +44,8 @@ instance.trackSignup = function (userId, req) {
   this.track({
     userId,
     event: 'Signup success',
-    properties})
+    properties
+  })
 }
 
 module.exports = instance

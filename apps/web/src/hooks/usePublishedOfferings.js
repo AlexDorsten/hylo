@@ -1,3 +1,4 @@
+import useInstanceCapabilities from 'hooks/useInstanceCapabilities'
 import { useEffect, useState } from 'react'
 import { useDispatch } from 'react-redux'
 
@@ -9,13 +10,14 @@ import fetchPublicStripeOfferings from 'store/actions/fetchPublicStripeOfferings
  */
 export default function usePublishedOfferings (groupId) {
   const dispatch = useDispatch()
+  const { payments } = useInstanceCapabilities()
   const [offerings, setOfferings] = useState([])
 
   useEffect(() => {
     let cancelled = false
 
     async function load () {
-      if (!groupId) {
+      if (!payments || !groupId) {
         setOfferings([])
         return
       }
@@ -36,7 +38,7 @@ export default function usePublishedOfferings (groupId) {
 
     load()
     return () => { cancelled = true }
-  }, [dispatch, groupId])
+  }, [dispatch, groupId, payments])
 
   return offerings
 }

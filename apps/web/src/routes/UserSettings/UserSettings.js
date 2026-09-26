@@ -1,3 +1,4 @@
+import useInstanceCapabilities from 'hooks/useInstanceCapabilities'
 import { get } from 'lodash/fp'
 import React, { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -56,6 +57,8 @@ const UserSettings = () => {
     if (newState === confirm) return
     return dispatch(setConfirmBeforeClose(newState))
   }
+
+  const { payments } = useInstanceCapabilities()
 
   const content = [
     {
@@ -138,7 +141,7 @@ const UserSettings = () => {
     })
   }
 
-  if (currentUser && currentUser.hasFeature(PROJECT_CONTRIBUTIONS)) {
+  if (payments && currentUser && currentUser.hasFeature(PROJECT_CONTRIBUTIONS)) {
     content.push({
       name: t('Payment'),
       path: 'payment',

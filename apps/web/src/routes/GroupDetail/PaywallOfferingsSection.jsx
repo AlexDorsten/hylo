@@ -1,3 +1,4 @@
+import withPaymentCapability from 'components/PaymentCapability'
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useTranslation } from 'react-i18next'
@@ -25,7 +26,7 @@ import { JoinBarriers } from './JoinSection'
  * Paid spaces do not own offerings. Pass `sellingGroup` (the parent) so we load
  * parent offerings that grant this space, and so checkout uses the parent id.
  */
-export default function PaywallOfferingsSection ({ group, sellingGroup }) {
+function PaywallOfferingsSection ({ group, sellingGroup }) {
   const { t } = useTranslation()
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -399,3 +400,5 @@ function OfferingCard ({ offering, group, isSpace, checkoutLoading, onPurchase, 
     </div>
   )
 }
+
+export default withPaymentCapability(PaywallOfferingsSection)

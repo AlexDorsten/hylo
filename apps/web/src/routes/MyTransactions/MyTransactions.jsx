@@ -1,3 +1,4 @@
+import withPaymentCapability from 'components/PaymentCapability'
 /**
  * MyTransactions component
  *
@@ -612,4 +613,4 @@ function MyTransactions () {
   )
 }
 
-export default MyTransactions
+export default withPaymentCapability(MyTransactions)

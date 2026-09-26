@@ -4,25 +4,7 @@ var GoogleTokenStrategy = require('passport-google-token').Strategy
 var LinkedinStrategy = require('passport-linkedin-oauth2').Strategy
 var LinkedInTokenStrategy = require('passport-linkedin-token-oauth2').Strategy
 import { getPublicKeyFromPem } from '../lib/util'
-
-// -----------
-// admin login
-
-var adminStrategy = new GoogleStrategy({
-  clientID: process.env.ADMIN_GOOGLE_CLIENT_ID,
-  clientSecret: process.env.ADMIN_GOOGLE_CLIENT_SECRET,
-  callbackURL: format('%s://%s%s', process.env.PROTOCOL, process.env.DOMAIN, '/noo/admin/login/oauth')
-}, function (accessToken, refreshToken, profile, done) {
-  var email = profile.emails[0].value
-
-  if (email.match(/hylo\.com$/)) {
-    done(null, {email: email})
-  } else {
-    done(null, false, {message: 'Not a hylo.com address.'})
-  }
-})
-adminStrategy.name = 'admin'
-passport.use(adminStrategy)
+const auth = require('../lib/authentication.cjs').configuration()
 
 passport.serializeUser(function (user, done) {
   done(null, user)
@@ -59,44 +41,47 @@ var formatProfile = function (profile, accessToken, refreshToken) {
   })
 }
 
-var googleStrategy = new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: url('/noo/login/google/oauth')
-}, function (accessToken, refreshToken, profile, done) {
-  done(null, formatProfile(profile))
-})
-passport.use(googleStrategy)
+if (auth.google) {
+  var googleStrategy = new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: url('/noo/login/google/oauth')
+  }, function (accessToken, refreshToken, profile, done) {
+    done(null, formatProfile(profile))
+  })
+  passport.use(googleStrategy)
 
-var googleTokenStrategy = new GoogleTokenStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET
-}, function (accessToken, refreshToken, profile, done) {
-  done(null, formatProfile(profile))
-})
-passport.use(googleTokenStrategy)
+  var googleTokenStrategy = new GoogleTokenStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET
+  }, function (accessToken, refreshToken, profile, done) {
+    done(null, formatProfile(profile))
+  })
+  passport.use(googleTokenStrategy)
+}
 
-var linkedinStrategy = new LinkedinStrategy({
-  clientID: process.env.LINKEDIN_API_KEY,
-  clientSecret: process.env.LINKEDIN_API_SECRET,
-  callbackURL: url('/noo/login/linkedin/oauth'),
-  scope: ['r_emailaddress', 'r_basicprofile'],
-  state: true
-}, function (accessToken, refreshToken, profile, done) {
-  done(null, formatProfile(profile))
-})
-passport.use(linkedinStrategy)
+if (auth.linkedin) {
+  var linkedinStrategy = new LinkedinStrategy({
+    clientID: process.env.LINKEDIN_API_KEY,
+    clientSecret: process.env.LINKEDIN_API_SECRET,
+    callbackURL: url('/noo/login/linkedin/oauth'),
+    scope: ['r_emailaddress', 'r_basicprofile'],
+    state: true
+  }, function (accessToken, refreshToken, profile, done) {
+    done(null, formatProfile(profile))
+  })
+  passport.use(linkedinStrategy)
 
-var linkedinTokenStrategy = new LinkedInTokenStrategy({
-  clientID: process.env.LINKEDIN_API_KEY,
-  clientSecret: process.env.LINKEDIN_API_SECRET
-}, function (accessToken, refreshToken, profile, done) {
-  done(null, formatProfile(profile))
-})
-passport.use(linkedinTokenStrategy)
+  var linkedinTokenStrategy = new LinkedInTokenStrategy({
+    clientID: process.env.LINKEDIN_API_KEY,
+    clientSecret: process.env.LINKEDIN_API_SECRET
+  }, function (accessToken, refreshToken, profile, done) {
+    done(null, formatProfile(profile))
+  })
+  passport.use(linkedinTokenStrategy)
+}
 
-
-//**** JWT login for email verification, password reset... ****//
+//**** Legacy JWT login (password recovery uses separate opaque tokens). ****//
 import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt'
 
 let opts = {}
@@ -107,7 +92,7 @@ opts.issuer = process.env.PROTOCOL + '://' + process.env.DOMAIN
 opts.audience = process.env.PROTOCOL + '://' + process.env.DOMAIN
 opts.algorithms = ['RS256']
 opts.jsonWebTokenOptions = {
-  // 4 hours because right now we only use these tokens for password reset and email verification and want to quickly invalidate, could even be quicker
+  // Keep legacy email/registration links compatible; new recovery never uses JWTs.
   maxAge: '4h'
 }
 passport.use(new JwtStrategy(opts, (jwt_payload, done) => {

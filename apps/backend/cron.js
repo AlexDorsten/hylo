@@ -1,5 +1,6 @@
 require('@babel/register')
 const skiff = require('./lib/skiff') // this must be required first
+const { paymentsEnabled } = require('./lib/payments.cjs')
 const { DateTime } = require('luxon')
 const sentry = require('./lib/sentry')
 sentry.setProcess('cron')
@@ -33,11 +34,13 @@ const daily = now => {
   sails.log.debug('Checking funding round reminders')
   tasks.push(FundingRound.sendReminderNotifications().then(count => sails.log.debug(`Sent ${count} funding round reminder notifications`)))
 
-  sails.log.debug('Sending subscription renewal reminders')
-  tasks.push(ContentAccess.sendRenewalReminders().then(count => sails.log.debug(`Sent ${count} subscription renewal reminder emails`)))
+  if (paymentsEnabled()) {
+    sails.log.debug('Sending subscription renewal reminders')
+    tasks.push(ContentAccess.sendRenewalReminders().then(count => sails.log.debug(`Sent ${count} subscription renewal reminder emails`)))
 
-  sails.log.debug('Sending expired access notifications')
-  tasks.push(ContentAccess.sendExpiredAccessNotifications().then(count => sails.log.debug(`Sent ${count} expired access notification emails`)))
+    sails.log.debug('Sending expired access notifications')
+    tasks.push(ContentAccess.sendExpiredAccessNotifications().then(count => sails.log.debug(`Sent ${count} expired access notification emails`)))
+  }
 
   sails.log.debug('Cleaning up expired OIDC payloads')
   tasks.push(OIDCAdapter.cleanupExpired().then(count => {

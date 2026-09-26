@@ -1,5 +1,47 @@
+# Discussion decision rounds are separate from legacy proposal votes.
+# Only the requester's ballot is exposed; aggregate results exist after closure.
+type DecisionOption { id: ID!, label: String!, passive: Boolean! }
+type DecisionConfig { method: String!, question: String!, purpose: String!, minimum: Int!, deadline: String!, options: [DecisionOption!]! }
+type DecisionAnswer { optionId: ID!, score: Int }
+type DecisionBallot { version: Int!, state: String!, answers: [DecisionAnswer!]! }
+type DecisionOptionResult { id: ID!, label: String!, passive: Boolean!, total: Int!, mean: Float, distribution: [Int!]! }
+type DecisionResult { status: String!, eligible: Int!, complete: Int!, abstentions: Int!, missing: Int!, options: [DecisionOptionResult!]!, bestOptionIds: [ID!]! }
+type DecisionRound {
+  id: ID!, version: Int!, phase: String!, config: DecisionConfig!, previousRoundId: ID,
+  electorateCount: Int!, createdAt: String!, openedAt: String, closedAt: String,
+  canManage: Boolean!, canVote: Boolean!, eligible: Boolean!, ownBallot: DecisionBallot!, result: DecisionResult
+}
+type DecisionRounds { canCreate: Boolean!, eligibleCount: Int!, hasMore: Boolean!, rounds: [DecisionRound!]! }
+input DecisionOptionInput { id: ID!, label: String!, passive: Boolean! }
+input DecisionConfigInput { method: String!, question: String!, purpose: String!, minimum: Int!, deadline: String!, options: [DecisionOptionInput!]! }
+input ManageDecisionInput { postId: ID!, roundId: ID, previousRoundId: ID, requestId: ID!, expectedVersion: Int!, action: String!, config: DecisionConfigInput }
+input DecisionAnswerInput { optionId: ID!, score: Int }
+input DecisionBallotInput { postId: ID!, roundId: ID!, requestId: ID!, expectedVersion: Int!, state: String!, answers: [DecisionAnswerInput!]! }
+
 scalar Date
 scalar JSON
+
+# These fields are served only through membership-checked discussion queries.
+# They deliberately do not extend the general Post/search/subscription payload.
+type DiscussionAuthor {
+  id: ID!
+  name: String
+}
+
+type DiscussionRevision {
+  version: Int!
+  context: String!
+  summary: String!
+  openQuestions: [String!]!
+  createdAt: String
+  author: DiscussionAuthor
+}
+
+type DiscussionOverview {
+  canEdit: Boolean!
+  current: DiscussionRevision!
+  lastSummary: DiscussionRevision
+}
 
 enum LocationDisplayPrecision {
   precise
@@ -34,6 +76,9 @@ enum GroupStatus {
 }
 
 type Query {
+  decisionRounds(postId: ID!, beforeId: ID): DecisionRounds
+  discussionOverview(postId: ID!): DiscussionOverview
+  discussionHistory(postId: ID!, beforeVersion: Int): [DiscussionRevision!]
   # Find an Activity by ID
   activity(id: ID): Activity
 
@@ -3188,6 +3233,9 @@ type ZapierTrigger {
 
 # The mutations accepted by Hylo
 type Mutation {
+  manageDecisionRound(input: ManageDecisionInput!): DecisionRound
+  submitDecisionBallot(input: DecisionBallotInput!): DecisionRound
+  updateDiscussion(postId: ID!, expectedVersion: Int!, context: String!, summary: String!, openQuestions: [String!]!): DiscussionOverview
   # For a steward to accept an invitation to one of their groups to be related to another group (either as a parent or a child)
   acceptGroupRelationshipInvite(groupRelationshipInviteId: ID): AcceptGroupRelationshipInviteResult
   # For a steward to accept a request from a Person to join a Group

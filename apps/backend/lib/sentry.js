@@ -10,6 +10,7 @@
 */
 
 const Sentry = require('@sentry/node')
+const { isDecisionRequest } = require('./decisionPrivacy')
 
 const dsn = process.env.SENTRY_DSN
 const environment = process.env.SENTRY_ENV || process.env.NODE_ENV
@@ -23,6 +24,9 @@ if (enabled) {
     tracesSampleRate: 0,
     // Align with existing Rollbar person fields (id / name / email via setUser)
     sendDefaultPii: true,
+    // SDK request integrations may capture bodies independently of GraphQL's
+    // resolver handler. Drop decision-round events before external delivery.
+    beforeSend: event => isDecisionRequest({ request: event.request, contextRequest: event.contexts?.request }) ? null : event,
     initialScope: {
       tags: {
         surface: 'backend'

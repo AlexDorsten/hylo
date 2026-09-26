@@ -24,7 +24,11 @@ async function expectCreatePostShell (page, urlPattern) {
 async function expectEditPostShell (page, urlPattern) {
   await waitPastRootSessionLoading(page)
   await expect(page).toHaveURL(urlPattern, navTimeout)
-  await expect(page.getByText(/E2E Public Post/i).first()).toBeVisible(uiTimeout)
+  // The title is an input value, not text content. Feed cards behind the modal
+  // can disappear as other isolated tests create posts, especially on mobile.
+  const title = page.locator('#create-modal-content .PostEditorTitle input')
+  await expect(title).toBeVisible(uiTimeout)
+  await expect(title).toHaveValue('E2E Public Post', uiTimeout)
 }
 
 test.describe('Batch J: create post modal', () => {

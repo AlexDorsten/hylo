@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
-import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import useAuthProviders from 'hooks/useAuthProviders'
 import getSignupState, { SignupState } from 'store/selectors/getSignupState'
 import Signup from './Signup'
 import VerifyEmail from './VerifyEmail'
@@ -9,6 +10,13 @@ import FinishRegistration from './FinishRegistration'
 import Loading from 'components/Loading'
 
 export default function SignupRouter (props) {
+  const { registration, loading } = useAuthProviders()
+  if (loading) return <Loading />
+  if (!registration) return <Navigate to='/login' replace />
+  return <SignupFlow {...props} />
+}
+
+function SignupFlow (props) {
   const location = useLocation()
   const navigate = useNavigate()
   const signupState = useSelector(getSignupState)
