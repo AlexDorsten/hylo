@@ -2,6 +2,8 @@ const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const { isDecisionRequest } = require('../../apps/backend/lib/decisionPrivacy')
 const loadBackend = require('./helpers/load-backend.cjs')
+const { createRequire } = require('node:module')
+const backendRequire = createRequire(require.resolve('../../apps/backend/package.json'))
 
 test('private decision requests are recognized with aliases, inline inputs, fragments and serialized telemetry bodies', () => {
   for (const query of [
@@ -61,4 +63,43 @@ test('GraphQL diagnostics suppress private payloads and exception details withou
   assert.equal(JSON.stringify(logs).includes('must-not-be-logged'), false)
   options.maskedErrors.maskError(new Error('Synthetic ordinary resolver failure'), 'Unexpected error.', false)
   assert.equal(reports.length, 1)
+})
+
+test('real Yoga result hooks and its own logger never receive private resolver details', async () => {
+  const realYoga = backendRequire('graphql-yoga')
+  const { buildSchema, GraphQLError } = backendRequire('graphql')
+  const schema = buildSchema('type Query { decisionRounds(denied: Boolean): String ordinary: String }')
+  const secret = 'synthetic-private-SQL-binding-0-3-5'
+  for (const [name, field] of Object.entries(schema.getQueryType().getFields())) {
+    field.resolve = async (_, args) => {
+      await Promise.resolve()
+      if (args.denied) throw new GraphQLError('DECISION_ACCESS_DENIED', { extensions: { code: 'DECISION_ACCESS_DENIED' } })
+      throw new Error(name === 'ordinary' ? 'synthetic-ordinary-resolver-failure' : secret)
+    }
+  }
+  const logs = []; const reports = []
+  const logger = Object.fromEntries(['debug', 'info', 'warn', 'error'].map(level => [level, (...args) => logs.push(args)]))
+  const { yoga } = loadBackend('api/graphql/index.js', {
+    env: { DEBUG_GRAPHQL: '1', AUTH_DEBUG: '1' },
+    globals: { Error, sails: { log: logger } },
+    mocks: {
+      'graphql-yoga': { ...realYoga, createYoga: options => realYoga.createYoga({ ...options, schema, logging: logger, maskedErrors: { ...options.maskedErrors, isDev: true } }) },
+      '../services/RedisPubSub': {}, './makeSchema': () => {}, './filters': { createGroupVisibilityLoader: () => ({}) },
+      '../../lib/sentry': { captureException: (...args) => reports.push(args) }
+    }
+  })
+  const request = query => yoga.fetch('http://localhost/noo/graphql', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ query, variables: query.includes('decisionRounds') ? { privateCanary: secret } : {} })
+  }, { req: { session: {}, headers: {} } }).then(response => response.json())
+  const result = await request('{ decisionRounds }')
+  assert.equal(result.errors[0].message, 'Unexpected error.')
+  assert.equal(JSON.stringify(result).includes(secret), false)
+  assert.equal(reports.length, 0)
+  assert.equal(require('node:util').inspect(logs).includes(secret), false)
+  const [denied] = await Promise.all([request('{ decisionRounds(denied: true) }'), request('{ ordinary }'), request('{ decisionRounds }')])
+  assert.equal(denied.errors[0].extensions.code, 'DECISION_ACCESS_DENIED')
+  assert.equal(reports.length, 1)
+  assert.equal(require('node:util').inspect(logs).includes(secret), false)
+  assert.equal(require('node:util').inspect(reports).includes(secret), false)
 })

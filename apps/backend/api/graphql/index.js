@@ -20,7 +20,7 @@ const graphqlRequestStore = new AsyncLocalStorage()
  */
 function maskAndLogGraphqlError (error, message, isDev) {
   const result = maskError(error, message, isDev)
-  if (result?.message === message) {
+  if (result !== error && result?.message === message) {
     // Database errors can contain SQL bindings. Never report private ballot
     // payloads or their request context, even when debug telemetry is enabled.
     if (graphqlRequestStore.getStore()?.privateDecision) {
@@ -61,7 +61,26 @@ const graphqlSentryContextPlugin = {
         privateDecision: contextValue?.privateDecision,
         currentUserId: contextValue?.currentUserId,
         operationName: executionArgs?.operationName || args.operationName
-      }, () => executeFn(executionArgs))
+      }, async () => {
+        if (!contextValue?.privateDecision) return executeFn(executionArgs)
+        // Yoga masks results after executeFn's async scope has ended, and its
+        // logger also receives the original error. Strip unexpected private
+        // details before either hook sees them, including in development.
+        let result
+        try { result = await executeFn(executionArgs) } catch (error) { result = { errors: [error] } }
+        if (!result.errors?.length) return result
+        return {
+          ...result,
+          errors: result.errors.map(error => {
+            if (maskError(error, 'Unexpected error.', false) === error) return error
+            sails.log.error('[graphql] unexpected decision-round error')
+            return new GraphQLError('Unexpected error.', {
+              path: error.path,
+              extensions: { code: 'INTERNAL_SERVER_ERROR' }
+            })
+          })
+        }
+      })
     })
   }
 }

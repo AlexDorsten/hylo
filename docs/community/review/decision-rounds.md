@@ -85,7 +85,9 @@ yarn workspace web build
   membership/moderation revocation, stale responses and navigation. The adjacent
   overview and post-detail tests also pass.
   Together these three suites pass 14 tests. The self-hosting checks also pass,
-  including enabled-telemetry and GraphQL debug-log privacy regressions.
+  including enabled-telemetry and GraphQL debug-log privacy regressions. A real
+  Yoga request test verifies its post-execution masking hooks and built-in logger,
+  including development responses and concurrent ordinary/private requests.
 - The real browser flow passes on desktop Chromium and mobile Chrome with three
   voters and an outsider. It checks keyboard entry, replacement/withdrawal/
   abstention, revocation, reload persistence, all six locales and a second empty
